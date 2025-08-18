@@ -14,34 +14,7 @@ from src.general_utils import (
 # url = "http://localhost:4243"
 # model = umbridge.HTTPModel(url, "forward")
 
-import argparse
-
-
-def parse_args():
-    parser = argparse.ArgumentParser(
-        description="Process some flags for HPC and mesh operations."
-    )
-
-    # Add arguments
-    parser.add_argument(
-        "--no-hpc", action="store_true", help="Flag when using HPC cluster"
-    )
-    parser.add_argument(
-        "--load-from-npz", action="store_true", help="Flag to load from NPZ file"
-    )
-    parser.add_argument(
-        "--no-singularity-hpc",
-        action="store_true",
-        help="Flag to use Singularity on HPC",
-    )
-    parser.add_argument(
-        "--rectangular-mesh",
-        action="store_true",
-        help="Flag for using rectangular mesh",
-    )
-
-    args = parser.parse_args()
-    return args
+from src.general_utils import parse_args
 
 
 def main():
@@ -57,8 +30,9 @@ def main():
     # print(f"Use rectangular_mesh = {args.rectangular_mesh}")
     rectangular_mesh = False
 
-    # Define parameter ranges
-    # characteristic length of the cells
+    # --- Define parameter ranges ---
+
+    #  characteristic length of the cells
     parameter_range_n_cell = [
         # 0.05,
         # 0.025,
@@ -70,22 +44,12 @@ def main():
         # 0.00075,
         # 0.0005,
     ]
-    #    0.0075,
-    #    0.005,
-    #    0.0025,
-    #    0.001,
-    # ]
-    # GAUSS LEGENDRE  2D quadrature order (MUST BE EVEN)
+
+    # quadrature order (must be an even number)
 
     parameter_range_quad_order = [
         4
     ]  # [4, 8, 12, 16, 20, 24, 28,32,40,48,56,64,72,80]  # [4, 8, 12, 16, 20, 24, 28]
-    #    20,
-    #    30,
-    #    40,
-    #    50,
-    #    60,
-    # ]  # GAUSS LEGENDRE 2D quadrature
 
     parameter_range_abs_blue = [
         10
@@ -95,6 +59,7 @@ def main():
     ]  # [0, 0.5, 1, 5, 10]  # Prescribed range for LATTICE_DSGN_ABSORPTION_BLUE
 
     if load_from_npz:  # TODO
+        raise NotImplementedError
         design_params, design_param_names = load_lattice_samples_from_npz(
             "sampling/pilot-study-samples-hohlraum-05-29-24.npz"
         )

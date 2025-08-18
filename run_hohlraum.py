@@ -30,7 +30,7 @@ def main():
         # 0.0135,
         0.02,
     ]
-    # quadrature order
+    # quadrature order (must be an even number)
     parameter_range_quad_order = [4]
 
     # Define the geometry settings of the test case
