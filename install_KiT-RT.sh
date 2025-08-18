@@ -5,7 +5,7 @@ cd KiT-RT
 
 # checkout the branch new_radiation_test_cases
 git fetch origin
-git checkout hot_fix_mpi_deploy
+git checkout master
 # load all submodules
 git submodule update --init --recursive
 

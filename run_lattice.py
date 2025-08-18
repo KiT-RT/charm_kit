@@ -46,28 +46,29 @@ def parse_args():
 
 def main():
     args = parse_args()
-    print(f"HPC mode = { not args.no_hpc}")
+    print(f"HPC mode = { args.use_slurm}")
     print(f"Load from npz = {args.load_from_npz}")
-    print(f"HPC with singularity = { not args.no_singularity_hpc}")
-    print(f"Use rectangular_mesh = {args.rectangular_mesh}")
+    print(f"HPC with singularity = { args.use_singularity}")
 
-    hpc_operation = not args.no_hpc  # Flag when using HPC cluster
+    hpc_operation = args.use_slurm  # Flag when using HPC cluster
     load_from_npz = args.load_from_npz
-    singularity_hpc = not args.no_singularity_hpc
-    rectangular_mesh = args.rectangular_mesh
+    singularity_hpc = args.use_singularity
+
+    # print(f"Use rectangular_mesh = {args.rectangular_mesh}")
+    rectangular_mesh = False
 
     # Define parameter ranges
     # characteristic length of the cells
     parameter_range_n_cell = [
-        #0.05,
-        #0.025,
-        #0.01,
-        #0.0075,
-        #0.005,
+        # 0.05,
+        # 0.025,
+        # 0.01,
+        # 0.0075,
+        # 0.005,
         0.0025,
-        #0.001,
-        #0.00075,
-        #0.0005,
+        # 0.001,
+        # 0.00075,
+        # 0.0005,
     ]
     #    0.0075,
     #    0.005,
@@ -76,7 +77,9 @@ def main():
     # ]
     # GAUSS LEGENDRE  2D quadrature order (MUST BE EVEN)
 
-    parameter_range_quad_order = [4] #[4, 8, 12, 16, 20, 24, 28,32,40,48,56,64,72,80]  # [4, 8, 12, 16, 20, 24, 28]
+    parameter_range_quad_order = [
+        4
+    ]  # [4, 8, 12, 16, 20, 24, 28,32,40,48,56,64,72,80]  # [4, 8, 12, 16, 20, 24, 28]
     #    20,
     #    30,
     #    40,

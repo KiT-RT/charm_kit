@@ -10,13 +10,13 @@ def parse_args():
     )
     # Add arguments
     parser.add_argument(
-        "--no-hpc", action="store_true", help="Flag when using HPC cluster"
+        "--use-slurm", action="store_true", help="Flag when using HPC cluster"
     )
     parser.add_argument(
         "--load-from-npz", action="store_true", help="Flag to load from NPZ file"
     )
     parser.add_argument(
-        "--no-singularity",
+        "--use-singularity",
         action="store_true",
         help="Flag to use Singularity Container for KiT-RT",
     )
