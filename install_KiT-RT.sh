@@ -1,6 +1,7 @@
 # clone KiT-RT
 git clone https://github.com/KiT-RT/kitrt_code.git
 # go to KiT-RT directory
+mv kitrt_code KiT-RT
 cd KiT-RT
 
 # checkout the branch new_radiation_test_cases
