@@ -25,11 +25,12 @@ Preliminaries:
 
 4. Install [KiT-RT](https://github.com/CSMMLab/KiT-RT) as a submodule using the provided installer. (Requires root for container build.)
    ```
-   sh install_KiT-RT.sh
+   bash install_KiT-RT.sh
    ```
+   The installer always builds the CPU Singularity image + binary. If a CUDA GPU is detected (`nvidia-smi`), it also builds the CUDA Singularity image and `build_singularity_cuda` binary automatically.
    If updating KiT-RT:
    ```
-   sh update_KiT-RT.sh
+   bash update_KiT-RT.sh
    ```
    If on a cluster without root, build the container locally and upload it to `CharmKiT/KiT-RT/tools/singularity/`.
 

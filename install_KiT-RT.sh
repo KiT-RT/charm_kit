@@ -1,27 +1,43 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+has_cuda_gpu() {
+    if ! command -v nvidia-smi >/dev/null 2>&1; then
+        return 1
+    fi
+    nvidia-smi -L >/dev/null 2>&1
+}
+
 # clone KiT-RT
 git clone git@github.com:CSMMLab/KiT-RT.git
+
 # go to KiT-RT directory
 cd KiT-RT
 
-# checkout the branch new_radiation_test_cases
+# checkout the default branch and load submodules
 git fetch origin
 git checkout master
-# load all submodules
 git submodule update --init --recursive
 
-# create build directory
-mkdir build_singularity
-
-# navigate to directory where the singularity .def script is located
+# navigate to directory where the singularity scripts are located
 cd tools/singularity
+chmod +x build_container.sh install_kitrt_singularity.sh install_kitrt_singularity_cuda.sh
 
-# build the singularity container. This requires root privileges
-echo "sudo access needed to build the singularity container. This will hopefully not be neccessary in the future."
-sudo sh build_container.sh
+# build CPU singularity container. This requires root privileges.
+echo "Building CPU singularity container (sudo required)."
+sudo ./build_container.sh cpu
 
-# compile KiT-RT within the singularity container
-chmod +x install_kitrt_singularity.sh
+# compile CPU KiT-RT within the singularity container
 singularity exec kit_rt.sif ./install_kitrt_singularity.sh
 
-# go back to CharmNet repo
+# optionally build and compile CUDA KiT-RT if a CUDA GPU is present
+if has_cuda_gpu; then
+    echo "CUDA GPU detected. Building CUDA singularity container and CUDA KiT-RT binary."
+    sudo ./build_container.sh cuda
+    singularity exec --nv kit_rt_MPI_cuda.sif ./install_kitrt_singularity_cuda.sh
+else
+    echo "No CUDA GPU detected. Skipping CUDA singularity container and CUDA build."
+fi
+
+# go back to CharmKiT repo root
 cd ../../../
