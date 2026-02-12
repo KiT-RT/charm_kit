@@ -30,6 +30,14 @@ def model(parameters):
     hpc_operation = parameters[0][4]
     singularity_hpc = parameters[0][5]
     rectangular_mesh = parameters[0][6]
+    use_cuda = bool(parameters[0][7]) if len(parameters[0]) > 7 else False
+    quiet = bool(parameters[0][8]) if len(parameters[0]) > 8 else False
+    if use_cuda:
+        singularity_hpc = 1
+    if use_cuda and hpc_operation == 1:
+        raise ValueError(
+            "CUDA mode with SLURM is not supported in this workflow."
+        )
 
     subfolder = "benchmarks/lattice/"
     base_config_file = subfolder + "lattice.cfg"
@@ -91,10 +99,14 @@ def model(parameters):
         # Step 5: Run the C++ simulation
         if singularity_hpc == 1:
             print("Running lattice simulation with singularity")
-            run_cpp_simulation_containerized(generated_cfg_file)
+            run_cpp_simulation_containerized(
+                generated_cfg_file,
+                use_cuda=use_cuda,
+                quiet=quiet,
+            )
         else:
             print("Running lattice simulation without singularity")
-            run_cpp_simulation(generated_cfg_file)
+            run_cpp_simulation(generated_cfg_file, quiet=quiet)
     elif hpc_operation == 1:
         # Write slurm file
         write_slurm_file(
@@ -102,6 +114,7 @@ def model(parameters):
             unique_name,
             subfolder,
             singularity_hpc,
+            use_cuda=use_cuda,
         )
 
     # Step 6: Read the log file
@@ -109,12 +122,19 @@ def model(parameters):
         log_filename = generate_log_filename(kitrt_parameters)
 
         if log_filename:
+            csv_path = subfolder + log_filename + ".csv"
+            if not os.path.exists(csv_path):
+                raise FileNotFoundError(
+                    "Expected lattice log CSV was not generated: "
+                    f"{csv_path}. The KiT-RT solver likely failed before writing output."
+                )
             # Step 7: Read and convert the data from the CSV log file to a DataFrame
-            log_data = read_csv_file(subfolder + log_filename + ".csv")
+            log_data = read_csv_file(csv_path)
             log_data["LATTICE_DSGN_ABSORPTION_BLUE"] = absorption_blue_value
             log_data["LATTICE_DSGN_SCATTER_WHITE"] = scatter_white_value
             quantities_of_interest = [
                 float(log_data["Wall_time_[s]"]),
+                float(log_data["Mass"]),
                 float(log_data["Cur_absorption"]),
                 float(log_data["Total_absorption"]),
                 float(log_data["Cur_outflow_P1"]),
@@ -123,7 +143,7 @@ def model(parameters):
                 float(log_data["Total_outflow_P2"]),
             ]
     else:
-        quantities_of_interest = [0] * 7
+        quantities_of_interest = [0] * 8
 
     return [quantities_of_interest]
 
@@ -132,11 +152,12 @@ def get_qois_col_names():
     return np.array(
         [
             "Wall_time_[s]",
-            "Absotption_final_time",
-            "Cumulated_absorption",
-            "Outflow_Perimeter1_final_time",
-            "Cumulated_outflow_Perimeter1",
-            "Outflow_Perimeter2_final_time",
-            "Cumulated_outflow_Perimeter2",
+            "Mass",
+            "Cur_absorption",
+            "Total_absorption",
+            "Cur_outflow_P1",
+            "Total_outflow_P1",
+            "Cur_outflow_P2",
+            "Total_outflow_P2",
         ]
     )

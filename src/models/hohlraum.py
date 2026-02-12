@@ -31,6 +31,14 @@ def model(parameters):
     quad_order = int(parameters[0][9])
     hpc_operation = parameters[0][10]
     singularity_hpc = parameters[0][11]
+    use_cuda = bool(parameters[0][12]) if len(parameters[0]) > 12 else False
+    quiet = bool(parameters[0][13]) if len(parameters[0]) > 13 else False
+    if use_cuda:
+        singularity_hpc = 1
+    if use_cuda and hpc_operation == 1:
+        raise ValueError(
+            "CUDA mode with SLURM is not supported in this workflow."
+        )
     subfolder = "benchmarks/hohlraum/"
     base_config_file = subfolder + "hohlraum.cfg"
 
@@ -114,10 +122,14 @@ def model(parameters):
         # Step 5: Run the C++ simulation
         if singularity_hpc == 1:
             print("Running simulation with singularity")
-            run_cpp_simulation_containerized(generated_cfg_file)
+            run_cpp_simulation_containerized(
+                generated_cfg_file,
+                use_cuda=use_cuda,
+                quiet=quiet,
+            )
         else:
             print("Running simulation without singularity")
-            run_cpp_simulation(generated_cfg_file)
+            run_cpp_simulation(generated_cfg_file, quiet=quiet)
     elif hpc_operation == 1:
         # Write slurm file
         write_slurm_file(
@@ -125,6 +137,7 @@ def model(parameters):
             unique_name,
             subfolder,
             singularity_hpc,
+            use_cuda=use_cuda,
         )
 
     if hpc_operation == 0 or hpc_operation == 2:
@@ -140,10 +153,11 @@ def model(parameters):
             # print(integrated_probe_moments)
             quantities_of_interest = [
                 float(log_data["Wall_time_[s]"]),
+                float(log_data["Mass"]),
                 float(log_data["Cumulated_absorption_center"]),
                 float(log_data["Cumulated_absorption_vertical_wall"]),
                 float(log_data["Cumulated_absorption_horizontal_wall"]),
-               # float(log_data["Var. absorption green"]),
+                # float(log_data["Var. absorption green"]),
             ]
 
             for i in range(N):
@@ -204,10 +218,11 @@ def get_qois_col_names():
     return np.array(
         [
             "Wall_time_[s]",
+            "Mass",
             "Cumulated_absorption_center",
             "Cumulated_absorption_vertical_wall",
             "Cumulated_absorption_horizontal_wall",
-           # "Variation_absorption_green",
+            # "Variation_absorption_green",
             "Probe0_u0_N1",
             "Probe0_u0_N2",
             "Probe0_u0_N3",

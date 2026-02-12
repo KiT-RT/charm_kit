@@ -4,7 +4,46 @@ import time
 from src.general_utils import get_user_job_count
 
 
-def run_cpp_simulation(config_file):
+def _run_and_raise(command, mode_label, quiet=False):
+    try:
+        if quiet:
+            result = subprocess.run(
+                command,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+            )
+        else:
+            result = subprocess.run(command)
+    except FileNotFoundError as e:
+        raise RuntimeError(
+            f"{mode_label} run failed: executable not found: {command[0]}"
+        ) from e
+
+    if result.returncode != 0:
+        stderr = ""
+        if quiet:
+            stderr = (result.stderr or "").strip()
+        hint = ""
+        if "error while loading shared libraries" in stderr:
+            hint = (
+                " Hint: missing system libraries in local mode. "
+                "Use --singularity (or --cuda) to run inside the container."
+            )
+        if not stderr:
+            stderr = (
+                "See solver output above."
+                if not quiet
+                else "No stderr captured."
+            )
+        raise RuntimeError(
+            f"{mode_label} run failed with return code {result.returncode}. "
+            f"Command: {' '.join(command)}. "
+            f"Stderr: {stderr}{hint}"
+        )
+
+
+def run_cpp_simulation(config_file, quiet=False):
     # Path to the C++ executable
     print("here")
     current_path = os.getcwd()
@@ -12,42 +51,40 @@ def run_cpp_simulation(config_file):
     # Print the current path
     print(f"The current working directory is: {current_path}")
     print(config_file)
-    cpp_executable_path = "./KiT-RT/build/KiT-RT"  # mpirun -np 4
+    cpp_executable_path = "./kitrt_code/build/KiT-RT"  # mpirun -np 4
 
     # Command to run the C++ executable with the provided config file
     command = [cpp_executable_path, config_file]
 
     print(command)
-    try:
-        # Run the C++ executable
-        subprocess.run(command, check=True)
-        print("C++ simulation completed successfully.")
-    except subprocess.CalledProcessError as e:
-        print(f"Error running C++ simulation. Return code: {e.returncode}")
-        # You can handle the error as needed
-
-        # You can handle the error as needed
+    _run_and_raise(command, "Local KiT-RT", quiet=quiet)
+    print("C++ simulation completed successfully.")
 
 
-def run_cpp_simulation_containerized(config_file):
+def run_cpp_simulation_containerized(config_file, use_cuda=False, quiet=False):
     # Path to the C++ executable
-    singularity_command = [
-        "singularity",
-        "exec",
-        "KiT-RT/tools/singularity/kit_rt.sif",
-        "./KiT-RT/build_singularity/KiT-RT",
-        config_file,
-    ]
+    if use_cuda:
+        singularity_command = [
+            "singularity",
+            "exec",
+            "--nv",
+            "kitrt_code/tools/singularity/kit_rt_MPI_cuda.sif",
+            "./kitrt_code/build_singularity_cuda/KiT-RT",
+            config_file,
+        ]
+    else:
+        singularity_command = [
+            "singularity",
+            "exec",
+            "kitrt_code/tools/singularity/kit_rt.sif",
+            "./kitrt_code/build_singularity/KiT-RT",
+            config_file,
+        ]
 
     # Command to run the C++ executable with the provided config file
 
-    try:
-        # Run the C++ executable
-        subprocess.run(singularity_command, check=True)
-        print("C++ simulation completed successfully.")
-    except subprocess.CalledProcessError as e:
-        print(f"Error running C++ simulation. Return code: {e.returncode}")
-        # You can handle the error as needed
+    _run_and_raise(singularity_command, "Containerized KiT-RT", quiet=quiet)
+    print("C++ simulation completed successfully.")
 
 
 def execute_slurm_scripts(directory, user, max_jobs=60, sleep_time=30):

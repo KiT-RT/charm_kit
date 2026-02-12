@@ -384,7 +384,13 @@ def update_half_lattice_mesh_file(n_cell, filepath, rectangular_mesh=False):
     return f"half_lattice_p{n_cell}.su2"
 
 
-def write_slurm_file(output_slurm_dir, unique_name, subfolder, singularity=True):
+def write_slurm_file(
+    output_slurm_dir, unique_name, subfolder, singularity=True, use_cuda=False
+):
+    if use_cuda:
+        raise ValueError(
+            "CUDA mode with SLURM is not supported in this workflow."
+        )
     basic_slurm_file = "./slurm_template.sh"
 
     # Ensure the output directory exists
@@ -399,14 +405,14 @@ def write_slurm_file(output_slurm_dir, unique_name, subfolder, singularity=True)
     if lines:
         if singularity:
             lines[-1] = (
-                "singularity exec KiT-RT/tools/singularity/kit_rt.sif ./KiT-RT/build_singularity/KiT-RT "
+                "singularity exec kitrt_code/tools/singularity/kit_rt.sif ./kitrt_code/build_singularity/KiT-RT "
                 + subfolder
                 + unique_name
                 + ".cfg\n"
             )
 
         else:
-            lines[-1] = "srun ./KiT-RT/build/KiT-RT " + subfolder + unique_name + ".cfg\n"
+            lines[-1] = "srun ./kitrt_code/build/KiT-RT " + subfolder + unique_name + ".cfg\n"
 
     # Write the modified lines to the output file
     with open(output_slurm_dir + unique_name + ".sh", "w") as file:
