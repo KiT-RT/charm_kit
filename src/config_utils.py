@@ -384,7 +384,13 @@ def update_half_lattice_mesh_file(n_cell, filepath, rectangular_mesh=False):
     return f"half_lattice_p{n_cell}.su2"
 
 
-def write_slurm_file(output_slurm_dir, unique_name, subfolder, singularity=True):
+def write_slurm_file(
+    output_slurm_dir, unique_name, subfolder, singularity=True, use_cuda=False
+):
+    if use_cuda:
+        raise ValueError(
+            "CUDA mode with SLURM is not supported in this workflow."
+        )
     basic_slurm_file = "./slurm_template.sh"
 
     # Ensure the output directory exists

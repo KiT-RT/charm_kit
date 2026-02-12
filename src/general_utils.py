@@ -20,6 +20,29 @@ def parse_args():
         action="store_true",
         help="Flag to use Singularity Container for KiT-RT",
     )
+    parser.add_argument(
+        "--csv",
+        type=str,
+        default=None,
+        help="Path to CSV file with design parameters",
+    )
+    parser.add_argument(
+        "--grid-cell-size",
+        type=float,
+        default=None,
+        help="Override spatial resolution (grid cell size) for all runs",
+    )
+    parser.add_argument(
+        "--quad-order",
+        type=int,
+        default=None,
+        help="Override angular resolution (quadrature order) for all runs",
+    )
+    parser.add_argument(
+        "--cuda",
+        action="store_true",
+        help="Run with the CUDA-enabled Singularity image and executable",
+    )
 
     args = parser.parse_args()
     return args

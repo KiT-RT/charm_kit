@@ -29,15 +29,25 @@ def run_cpp_simulation(config_file):
         # You can handle the error as needed
 
 
-def run_cpp_simulation_containerized(config_file):
+def run_cpp_simulation_containerized(config_file, use_cuda=False):
     # Path to the C++ executable
-    singularity_command = [
-        "singularity",
-        "exec",
-        "KiT-RT/tools/singularity/kit_rt.sif",
-        "./KiT-RT/build_singularity/KiT-RT",
-        config_file,
-    ]
+    if use_cuda:
+        singularity_command = [
+            "singularity",
+            "exec",
+            "--nv",
+            "KiT-RT/tools/singularity/kit_rt_MPI_cuda.sif",
+            "./KiT-RT/build_singularity_cuda/KiT-RT",
+            config_file,
+        ]
+    else:
+        singularity_command = [
+            "singularity",
+            "exec",
+            "KiT-RT/tools/singularity/kit_rt.sif",
+            "./KiT-RT/build_singularity/KiT-RT",
+            config_file,
+        ]
 
     # Command to run the C++ executable with the provided config file
 

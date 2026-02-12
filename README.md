@@ -48,41 +48,83 @@ Scripts support both HPC (SLURM) and local (no-HPC) execution.
 
 ## Running CharmKiT Scripts
 
-CharmKiT provides Python scripts for each test case. These scripts can be run in two modes:
+CharmKiT provides test-case drivers:
 
-- **HPC mode**: Submits jobs to a SLURM cluster (using `--hpc` flag).
-- **No-HPC (local) mode**: Runs all simulations sequentially on your local machine (default).
+- `run_lattice.py`
+- `run_hohlraum.py`
 
-### Example: Running the Hohlraum Test Case (Local Mode)
+Activate your environment first:
 
-1. Activate your Python environment:
-   ```
-   source venv/bin/activate
-   ```
-2. Run the script:
-   ```
-   python run_hohlraum.py --no-hpc
-   ```
-   This will execute all parameter combinations locally, running KiT-RT inside the Singularity container for each case. Results are saved as `.npz` files in the working directory.
+```bash
+source venv/bin/activate
+```
 
-### Example: Running the Lattice Test Case (Local Mode)
+Both scripts use the same execution flags:
 
-1. Activate your Python environment:
-   ```
-   source venv/bin/activate
-   ```
-2. Run the script:
-   ```
-   python run_lattice.py --no-hpc
+- `--use-slurm`: Submit jobs through SLURM.
+- `--use-singularity`: Run KiT-RT through the CPU Singularity image.
+- `--cuda`: Run KiT-RT through the CUDA Singularity image (`--nv` is added automatically).
+- `--load-from-npz`: Load parameter samples from file (script-dependent behavior).
+
+### Supported run setups
+
+1. **Local mode, raw (no Singularity)**
+
+   ```bash
+   python3 run_lattice.py
+   # or
+   python3 run_hohlraum.py
    ```
 
-### Script Options
+   Uses local executable: `./KiT-RT/build/KiT-RT`.
 
-Both scripts support various command-line arguments:
+2. **Local mode + Singularity (CPU)**
 
-- `--no-hpc` : Run locally (default is HPC SLURM execution -  requires SLURM setup).
-- `--no-singularity` : Don't use the Singularity container (default: enabled).
-- `--load-from-npz` : Loads design and grid parameters from npz file instead of using the presets in the run scripts.
+   ```bash
+   python3 run_lattice.py --use-singularity
+   # or
+   python3 run_hohlraum.py --use-singularity
+   ```
+
+   Uses image/executable:
+   `KiT-RT/tools/singularity/kit_rt.sif` and `./KiT-RT/build_singularity/KiT-RT`.
+
+3. **Local mode + Singularity + GPU**
+
+   ```bash
+   python3 run_lattice.py --cuda
+   # or
+   python3 run_hohlraum.py --cuda
+   ```
+
+   Uses image/executable:
+   `KiT-RT/tools/singularity/kit_rt_MPI_cuda.sif` and `./KiT-RT/build_singularity_cuda/KiT-RT`.
+
+4. **SLURM mode, raw (no Singularity)**
+
+   ```bash
+   python3 run_lattice.py --use-slurm
+   # or
+   python3 run_hohlraum.py --use-slurm
+   ```
+
+   Generated SLURM scripts call: `srun ./KiT-RT/build/KiT-RT ...`.
+
+5. **SLURM mode + Singularity (CPU)**
+
+   ```bash
+   python3 run_lattice.py --use-slurm --use-singularity
+   # or
+   python3 run_hohlraum.py --use-slurm --use-singularity
+   ```
+
+   Generated SLURM scripts call:
+   `singularity exec KiT-RT/tools/singularity/kit_rt.sif ./KiT-RT/build_singularity/KiT-RT ...`.
+
+### Not supported
+
+- `--use-slurm --cuda` is intentionally blocked.
+  GPU mode is currently supported only for local Singularity runs (no SLURM).
 
 
 # Test Case Descriptions
@@ -104,20 +146,22 @@ The main design parameters are:
 - Absorption in blue squares
 - Scattering in white squares
 
-The script `run_lattice.py` automates parameter sweeps over these variables, generating KiT-RT config files and collecting results. Quantities of interest include outflow and absorption metrics, as well as wall time. The mesh and configuration can be customized via script arguments.
+The script `run_lattice.py` automates parameter sweeps over these variables, generating KiT-RT config files and collecting results. Quantities of interest include mass, outflow and absorption metrics, as well as wall time. The mesh and configuration can be customized via script arguments.
 
 See `benchmarks/lattice/` for config templates and mesh files.
 
 ## 2. Hohlraum Test Case
 
-The hohlraum test case simulates radiative transfer in a symmetric 2D cavity (hohlraum) with specified boundary conditions and material properties. The setup is designed to study energy transport and absorption in a geometry relevant to inertial confinement fusion and high-energy density physics.
+The hohlraum test case models linear radiative transfer in a symmetric 2D cavity with mixed inflow and void boundary segments. The geometry affects transport and absorption.
+![Hohlraum test case](documentation/hohlraum.png)
 
-Key features:
-- Central cavity with reflecting and absorbing boundaries
-- Parameter sweep over mesh resolution and quadrature order
-- Quantities of interest: outflow, absorption, and time-resolved metrics
+The main design parameters are:
+- Mesh characteristic length (spatial resolution)
+- Quadrature order (velocity space)
+- Capsule center location (`x`, `y`)
+- Left and right absorber geometry parameters (top, bottom, and horizontal wall positions)
 
-The script `run_hohlraum.py` manages the parameter study, config generation, and result collection. All runs are executed via the Singularity-encapsulated KiT-RT solver.
+The script `run_hohlraum.py` automates parameter sweeps over these variables, generating KiT-RT config files and collecting results. Quantities of interest include mass, wall time, cumulative absorption metrics in key regions, and probe-moment summaries. The mesh and configuration can be customized via script arguments.
 
 See `benchmarks/hohlraum/` for config templates and mesh files.
 
@@ -143,4 +187,3 @@ If you use CharmKiT or the provided benchmarks in your research, please cite:
       url={https://arxiv.org/abs/2505.17284}, 
 }
 ```
-
