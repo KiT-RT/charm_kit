@@ -11,10 +11,10 @@ has_cuda_gpu() {
 }
 
 # clone KiT-RT
-git clone "${KITRT_REPO_URL}" KiT-RT
+git clone "${KITRT_REPO_URL}" kitrt_code
 
-# go to KiT-RT directory
-cd KiT-RT
+# go to kitrt_code directory
+cd kitrt_code
 
 # keep origin synchronized with configured upstream and load submodules
 git remote set-url origin "${KITRT_REPO_URL}"

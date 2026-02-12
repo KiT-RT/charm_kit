@@ -1,7 +1,7 @@
 
-# CharmKiT
+# charm_kit
 
-CharmKiT is a benchmarking suite for the CharmNet project, providing automated parameter studies and test case management for the [KiT-RT PDE simulator](https://kit-rt.readthedocs.io/en/develop/index.html). It enables reproducible runs of radiative transfer test cases such as the lattice and hohlraum setups, using Python scripts to manage parameter sweeps, configuration, and result collection. CharmKiT supports both high-performance computing (HPC) and local (no-HPC) execution modes, leveraging Singularity containers for reproducibility.
+charm_kit is a benchmarking suite for the CharmNet project, providing automated parameter studies and test case management for the [KiT-RT PDE simulator](https://kit-rt.readthedocs.io/en/develop/index.html). It enables reproducible runs of radiative transfer test cases such as the lattice and hohlraum setups, using Python scripts to manage parameter sweeps, configuration, and result collection. charm_kit supports both high-performance computing (HPC) and local (no-HPC) execution modes, leveraging Singularity containers for reproducibility.
 
 
 
@@ -11,9 +11,9 @@ Preliminaries:
 
 1. Install [Singularity](https://docs.sylabs.io/guides/latest/user-guide/quick_start.html) on your system.
 
-2. Clone the `CharmKiT` Github repository:
+2. Clone the `charm_kit` Github repository:
    ```
-   git clone git@github.com:ScSteffen/CharmKiT.git
+   git clone git@github.com:ScSteffen/charm_kit.git
    ```
 
 3. Install Poetry and create the project environment:
@@ -26,17 +26,18 @@ Preliminaries:
    ```
    bash install_KiT-RT.sh
    ```
+   The repository is installed into `./kitrt_code/`.
    The installer always builds the CPU Singularity image + binary. If a CUDA GPU is detected (`nvidia-smi`), it also builds the CUDA Singularity image and `build_singularity_cuda` binary automatically.
    If updating KiT-RT:
    ```
    bash update_KiT-RT.sh
    ```
-   If on a cluster without root, build the container locally and upload it to `CharmKiT/KiT-RT/tools/singularity/`.
+   If on a cluster without root, build the container locally and upload it to `charm_kit/kitrt_code/tools/singularity/`.
 
 
-## How CharmKiT Works
+## How charm_kit Works
 
-CharmKiT automates the setup, execution, and result collection for radiative transfer test cases using the KiT-RT solver. The workflow is managed by Python scripts (e.g., `run_hohlraum.py`, `run_lattice.py`) that:
+charm_kit automates the setup, execution, and result collection for radiative transfer test cases using the KiT-RT solver. The workflow is managed by Python scripts (e.g., `run_hohlraum.py`, `run_lattice.py`) that:
 
 - Define parameter sweeps for each test case (e.g., mesh size, quadrature order, absorption/scattering coefficients).
 - Generate the necessary configuration files for KiT-RT.
@@ -46,9 +47,9 @@ CharmKiT automates the setup, execution, and result collection for radiative tra
 Scripts support both HPC (SLURM) and local (no-HPC) execution. 
 
 
-## Running CharmKiT Scripts
+## Running charm_kit Scripts
 
-CharmKiT provides test-case drivers:
+charm_kit provides test-case drivers:
 
 - `run_lattice.py`
 - `run_hohlraum.py`
@@ -112,7 +113,7 @@ Precedence for hyperparameters is:
    python3 run_hohlraum.py
    ```
 
-   Uses local executable: `./KiT-RT/build/KiT-RT`.
+   Uses local executable: `./kitrt_code/build/KiT-RT`.
 
 2. **Local mode + Singularity (CPU)**
 
@@ -123,7 +124,7 @@ Precedence for hyperparameters is:
    ```
 
    Uses image/executable:
-   `KiT-RT/tools/singularity/kit_rt.sif` and `./KiT-RT/build_singularity/KiT-RT`.
+   `kitrt_code/tools/singularity/kit_rt.sif` and `./kitrt_code/build_singularity/KiT-RT`.
 
 3. **Local mode + Singularity + GPU**
 
@@ -134,7 +135,7 @@ Precedence for hyperparameters is:
    ```
 
    Uses image/executable:
-   `KiT-RT/tools/singularity/kit_rt_MPI_cuda.sif` and `./KiT-RT/build_singularity_cuda/KiT-RT`.
+   `kitrt_code/tools/singularity/kit_rt_MPI_cuda.sif` and `./kitrt_code/build_singularity_cuda/KiT-RT`.
 
 4. **SLURM mode, raw (no Singularity)**
 
@@ -144,7 +145,7 @@ Precedence for hyperparameters is:
    python3 run_hohlraum.py --slurm
    ```
 
-   Generated SLURM scripts call: `srun ./KiT-RT/build/KiT-RT ...`.
+   Generated SLURM scripts call: `srun ./kitrt_code/build/KiT-RT ...`.
 
 5. **SLURM mode + Singularity (CPU)**
 
@@ -155,7 +156,7 @@ Precedence for hyperparameters is:
    ```
 
    Generated SLURM scripts call:
-   `singularity exec KiT-RT/tools/singularity/kit_rt.sif ./KiT-RT/build_singularity/KiT-RT ...`.
+   `singularity exec kitrt_code/tools/singularity/kit_rt.sif ./kitrt_code/build_singularity/KiT-RT ...`.
 
 ### Not supported
 
@@ -210,7 +211,7 @@ For more details on the scientific background and test case motivation, see the 
 
 ## Citation
 
-If you use CharmKiT or the provided benchmarks in your research, please cite:
+If you use charm_kit or the provided benchmarks in your research, please cite:
 
 ```bibtex
 @misc{schotthöfer2025referencesolutionslinearradiation,

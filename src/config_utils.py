@@ -405,14 +405,14 @@ def write_slurm_file(
     if lines:
         if singularity:
             lines[-1] = (
-                "singularity exec KiT-RT/tools/singularity/kit_rt.sif ./KiT-RT/build_singularity/KiT-RT "
+                "singularity exec kitrt_code/tools/singularity/kit_rt.sif ./kitrt_code/build_singularity/KiT-RT "
                 + subfolder
                 + unique_name
                 + ".cfg\n"
             )
 
         else:
-            lines[-1] = "srun ./KiT-RT/build/KiT-RT " + subfolder + unique_name + ".cfg\n"
+            lines[-1] = "srun ./kitrt_code/build/KiT-RT " + subfolder + unique_name + ".cfg\n"
 
     # Write the modified lines to the output file
     with open(output_slurm_dir + unique_name + ".sh", "w") as file:

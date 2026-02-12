@@ -10,7 +10,7 @@ has_cuda_gpu() {
     nvidia-smi -L >/dev/null 2>&1
 }
 
-cd KiT-RT
+cd kitrt_code
 git remote set-url origin "${KITRT_REPO_URL}"
 git fetch origin
 

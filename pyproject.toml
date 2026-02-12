@@ -1,0 +1,17 @@
+[tool.poetry]
+name = "charm_kit"
+version = "0.1.0"
+description = "Benchmarking workflows for KiT-RT lattice and hohlraum test cases."
+authors = ["charm_kit Developers"]
+readme = "README.md"
+package-mode = false
+
+[tool.poetry.dependencies]
+python = ">=3.10,<3.13"
+gmsh = "*"
+numpy = "*"
+pandas = "*"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"

@@ -51,7 +51,7 @@ def run_cpp_simulation(config_file, quiet=False):
     # Print the current path
     print(f"The current working directory is: {current_path}")
     print(config_file)
-    cpp_executable_path = "./KiT-RT/build/KiT-RT"  # mpirun -np 4
+    cpp_executable_path = "./kitrt_code/build/KiT-RT"  # mpirun -np 4
 
     # Command to run the C++ executable with the provided config file
     command = [cpp_executable_path, config_file]
@@ -68,16 +68,16 @@ def run_cpp_simulation_containerized(config_file, use_cuda=False, quiet=False):
             "singularity",
             "exec",
             "--nv",
-            "KiT-RT/tools/singularity/kit_rt_MPI_cuda.sif",
-            "./KiT-RT/build_singularity_cuda/KiT-RT",
+            "kitrt_code/tools/singularity/kit_rt_MPI_cuda.sif",
+            "./kitrt_code/build_singularity_cuda/KiT-RT",
             config_file,
         ]
     else:
         singularity_command = [
             "singularity",
             "exec",
-            "KiT-RT/tools/singularity/kit_rt.sif",
-            "./KiT-RT/build_singularity/KiT-RT",
+            "kitrt_code/tools/singularity/kit_rt.sif",
+            "./kitrt_code/build_singularity/KiT-RT",
             config_file,
         ]
 
