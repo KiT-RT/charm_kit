@@ -3,22 +3,43 @@ import numpy as np
 import os
 import argparse
 
+try:
+    import tomllib
+except ModuleNotFoundError:  # pragma: no cover
+    import tomli as tomllib
 
-def parse_args():
-    parser = argparse.ArgumentParser(
-        description="Process some flags for HPC and mesh operations."
-    )
-    # Add arguments
+
+def _add_common_execution_args(parser):
     parser.add_argument(
-        "--use-slurm", action="store_true", help="Flag when using HPC cluster"
+        "--slurm",
+        dest="use_slurm",
+        action="store_true",
+        help="Submit jobs through SLURM",
+    )
+    # Backward-compatible alias (hidden from --help)
+    parser.add_argument(
+        "--use-slurm",
+        dest="use_slurm",
+        action="store_true",
+        help=argparse.SUPPRESS,
     )
     parser.add_argument(
-        "--load-from-npz", action="store_true", help="Flag to load from NPZ file"
+        "--load-from-npz",
+        action="store_true",
+        help="Load parameter samples from NPZ input",
     )
+    parser.add_argument(
+        "--singularity",
+        dest="use_singularity",
+        action="store_true",
+        help="Run KiT-RT through the CPU Singularity image",
+    )
+    # Backward-compatible alias (hidden from --help)
     parser.add_argument(
         "--use-singularity",
+        dest="use_singularity",
         action="store_true",
-        help="Flag to use Singularity Container for KiT-RT",
+        help=argparse.SUPPRESS,
     )
     parser.add_argument(
         "--csv",
@@ -38,12 +59,118 @@ def parse_args():
         default=None,
         help="Override angular resolution (quadrature order) for all runs",
     )
+
+    parser.add_argument(
+        "--config",
+        type=str,
+        default=None,
+        help="Path to TOML hyperparameter config file",
+    )
+    parser.add_argument(
+        "-q",
+        "--quiet",
+        action="store_true",
+        help="Suppress solver stdout/stderr output",
+    )
     parser.add_argument(
         "--cuda",
         action="store_true",
         help="Run with the CUDA-enabled Singularity image and executable",
     )
 
+
+def _add_lattice_design_args(parser):
+    parser.add_argument(
+        "--abs-blue",
+        type=float,
+        nargs="+",
+        default=None,
+        help="Override absorption coefficient(s) in blue lattice cells",
+    )
+    parser.add_argument(
+        "--scatter-white",
+        type=float,
+        nargs="+",
+        default=None,
+        help="Override scattering coefficient(s) in white lattice cells",
+    )
+
+
+def _add_hohlraum_design_args(parser):
+    parser.add_argument(
+        "--green-center-x",
+        type=float,
+        nargs="+",
+        default=None,
+        help="Override green-center x value(s) for hohlraum runs",
+    )
+    parser.add_argument(
+        "--green-center-y",
+        type=float,
+        nargs="+",
+        default=None,
+        help="Override green-center y value(s) for hohlraum runs",
+    )
+    parser.add_argument(
+        "--red-right-top",
+        type=float,
+        nargs="+",
+        default=None,
+        help="Override right-top red boundary value(s) for hohlraum runs",
+    )
+    parser.add_argument(
+        "--red-right-bottom",
+        type=float,
+        nargs="+",
+        default=None,
+        help="Override right-bottom red boundary value(s) for hohlraum runs",
+    )
+    parser.add_argument(
+        "--red-left-top",
+        type=float,
+        nargs="+",
+        default=None,
+        help="Override left-top red boundary value(s) for hohlraum runs",
+    )
+    parser.add_argument(
+        "--red-left-bottom",
+        type=float,
+        nargs="+",
+        default=None,
+        help="Override left-bottom red boundary value(s) for hohlraum runs",
+    )
+    parser.add_argument(
+        "--horizontal-left",
+        type=float,
+        nargs="+",
+        default=None,
+        help="Override left horizontal wall value(s) for hohlraum runs",
+    )
+    parser.add_argument(
+        "--horizontal-right",
+        type=float,
+        nargs="+",
+        default=None,
+        help="Override right horizontal wall value(s) for hohlraum runs",
+    )
+
+
+def parse_lattice_args():
+    parser = argparse.ArgumentParser(
+        description="Run lattice benchmark with lattice-specific design parameters."
+    )
+    _add_common_execution_args(parser)
+    _add_lattice_design_args(parser)
+    args = parser.parse_args()
+    return args
+
+
+def parse_hohlraum_args():
+    parser = argparse.ArgumentParser(
+        description="Run hohlraum benchmark with hohlraum-specific design parameters."
+    )
+    _add_common_execution_args(parser)
+    _add_hohlraum_design_args(parser)
     args = parser.parse_args()
     return args
 
@@ -59,6 +186,14 @@ def replace_next_line(input_file, custom_line, output_file):
 
     with open(output_file, "w") as f:
         f.writelines(lines)
+
+
+def load_toml_hyperparameters(config_path):
+    if config_path is None or not os.path.exists(config_path):
+        return {}
+    with open(config_path, "rb") as f:
+        data = tomllib.load(f)
+    return data.get("hyperparameters", {})
 
 
 def get_user_job_count(user):

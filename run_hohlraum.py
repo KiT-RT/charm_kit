@@ -9,41 +9,136 @@ from src.general_utils import (
     create_hohlraum_samples_from_param_range,
     load_hohlraum_samples_from_csv,
     delete_slurm_scripts,
+    load_toml_hyperparameters,
 )
-from src.general_utils import parse_args
+from src.general_utils import parse_hohlraum_args
 
 
 def main():
-    args = parse_args()
+    args = parse_hohlraum_args()
     print(f"HPC mode = { args.use_slurm}")
     print(f"Load from npz = {args.load_from_npz}")
     print(f"HPC with singularity = { args.use_singularity}")
     print(f"CUDA mode = {args.cuda}")
+    print(f"Quiet mode = {args.quiet}")
 
     hpc_operation = args.use_slurm  # Flag when using HPC cluster
     load_from_npz = args.load_from_npz
     use_cuda = args.cuda
     if use_cuda and hpc_operation:
         raise SystemExit(
-            "ERROR: --cuda cannot be combined with --use-slurm. "
+            "ERROR: --cuda cannot be combined with --slurm. "
             "GPU mode is supported only with Singularity in non-SLURM runs."
         )
     singularity_hpc = args.use_singularity or use_cuda
     if use_cuda and not args.use_singularity:
         print("CUDA mode requested; enabling Singularity execution.")
+    config_path = args.config or "benchmarks/hohlraum/hyperparams.toml"
+    hyper = load_toml_hyperparameters(config_path)
+    print(f"Hohlraum hyperparameter config = {config_path}")
+
+    def as_list_or_none(value):
+        if value is None:
+            return None
+        if isinstance(value, list):
+            return value
+        return [value]
+
+    def override_csv_column(df, values, column_name, arg_name):
+        values = as_list_or_none(values)
+        if values is None:
+            return
+        print(f"Overriding {column_name} with {values}")
+        if len(values) == 1:
+            df[column_name] = values[0]
+        elif len(values) == len(df):
+            df[column_name] = values
+        else:
+            raise SystemExit(
+                f"ERROR: In --csv mode, {arg_name} must provide either one value "
+                "or exactly one value per CSV row."
+            )
 
     if args.csv:
         # --- CSV-driven mode: read design parameters from CSV ---
         print(f"Reading design parameters from CSV: {args.csv}")
         df = pd.read_csv(args.csv)
 
+        override_csv_column(
+            df,
+            args.green_center_x
+            if args.green_center_x is not None
+            else hyper.get("green_center_x"),
+            "green_center_x",
+            "--green-center-x",
+        )
+        override_csv_column(
+            df,
+            args.green_center_y
+            if args.green_center_y is not None
+            else hyper.get("green_center_y"),
+            "green_center_y",
+            "--green-center-y",
+        )
+        override_csv_column(
+            df,
+            args.red_right_top if args.red_right_top is not None else hyper.get("red_right_top"),
+            "red_right_top",
+            "--red-right-top",
+        )
+        override_csv_column(
+            df,
+            args.red_right_bottom
+            if args.red_right_bottom is not None
+            else hyper.get("red_right_bottom"),
+            "red_right_bottom",
+            "--red-right-bottom",
+        )
+        override_csv_column(
+            df,
+            args.red_left_top if args.red_left_top is not None else hyper.get("red_left_top"),
+            "red_left_top",
+            "--red-left-top",
+        )
+        override_csv_column(
+            df,
+            args.red_left_bottom
+            if args.red_left_bottom is not None
+            else hyper.get("red_left_bottom"),
+            "red_left_bottom",
+            "--red-left-bottom",
+        )
+        override_csv_column(
+            df,
+            args.horizontal_left
+            if args.horizontal_left is not None
+            else hyper.get("horizontal_left"),
+            "horizontal_left",
+            "--horizontal-left",
+        )
+        override_csv_column(
+            df,
+            args.horizontal_right
+            if args.horizontal_right is not None
+            else hyper.get("horizontal_right"),
+            "horizontal_right",
+            "--horizontal-right",
+        )
         # Allow overwriting spatial and angular resolution
-        if args.grid_cell_size is not None:
-            print(f"Overriding grid_cell_size with {args.grid_cell_size}")
-            df["grid_cell_size"] = args.grid_cell_size
-        if args.quad_order is not None:
-            print(f"Overriding quad_order with {args.quad_order}")
-            df["quad_order"] = args.quad_order
+        override_csv_column(
+            df,
+            args.grid_cell_size
+            if args.grid_cell_size is not None
+            else hyper.get("grid_cell_size"),
+            "grid_cell_size",
+            "--grid-cell-size",
+        )
+        override_csv_column(
+            df,
+            args.quad_order if args.quad_order is not None else hyper.get("quad_order"),
+            "quad_order",
+            "--quad-order",
+        )
 
         # Extract columns in the order expected by the hohlraum model:
         # left_red_top, left_red_bottom, right_red_top, right_red_bottom,
@@ -83,22 +178,83 @@ def main():
         # --- Define parameter ranges ---
 
         #  characteristic length of the cells:  #grid cells = O(1/cell_size^2)
-        parameter_range_grid_cell_size = [0.0075]
+        parameter_range_grid_cell_size = as_list_or_none(
+            args.grid_cell_size
+            if args.grid_cell_size is not None
+            else hyper.get("grid_cell_size")
+        ) or [0.0075]
 
         # quadrature order (must be an even number):  #velocity grid cells = O(order^2)
-        parameter_range_quad_order = [6]
+        parameter_range_quad_order = as_list_or_none(
+            args.quad_order if args.quad_order is not None else hyper.get("quad_order")
+        ) or [6]
+        if any(int(q) % 2 != 0 for q in parameter_range_quad_order):
+            raise SystemExit("ERROR: --quad-order must be an even number.")
         # balance the two roughly (see Paper Fig 6)
 
         # Define the geometry settings of the test case
 
-        parameter_range_green_center_x = [-0.1, 0.0, 0.1]  # Default: 0
-        parameter_range_green_center_y = [-0.075, 0.0, 0.075]  # Default: 0
-        parameter_range_red_right_top = [0.3, 0.4, 0.5]  # Default: 0.4
-        parameter_range_red_right_bottom = [-0.5, -0.4, -0.3]  # Default: -0.4
-        parameter_range_red_left_top = [0.3, 0.4, 0.5]  # Default: 0.4
-        parameter_range_red_left_bottom = [-0.5, -0.4, -0.3]  # Default: -0.4
-        parameter_range_horizontal_left = [-0.63, -0.6, -0.5]  # Default: -0.6
-        parameter_range_horizontal_right = [0.5, 0.6, 0.63]  # Default: 0.6
+        parameter_range_green_center_x = as_list_or_none(
+            args.green_center_x
+            if args.green_center_x is not None
+            else hyper.get("green_center_x")
+        ) or [-0.1, 0.0, 0.1]  # Default: 0
+        parameter_range_green_center_y = (
+            as_list_or_none(
+                args.green_center_y
+                if args.green_center_y is not None
+                else hyper.get("green_center_y")
+            )
+            or [-0.075, 0.0, 0.075]
+        )  # Default: 0
+        parameter_range_red_right_top = (
+            as_list_or_none(
+                args.red_right_top
+                if args.red_right_top is not None
+                else hyper.get("red_right_top")
+            )
+            or [0.3, 0.4, 0.5]
+        )  # Default: 0.4
+        parameter_range_red_right_bottom = (
+            as_list_or_none(
+                args.red_right_bottom
+                if args.red_right_bottom is not None
+                else hyper.get("red_right_bottom")
+            )
+            or [-0.5, -0.4, -0.3]
+        )  # Default: -0.4
+        parameter_range_red_left_top = (
+            as_list_or_none(
+                args.red_left_top
+                if args.red_left_top is not None
+                else hyper.get("red_left_top")
+            )
+            or [0.3, 0.4, 0.5]
+        )  # Default: 0.4
+        parameter_range_red_left_bottom = (
+            as_list_or_none(
+                args.red_left_bottom
+                if args.red_left_bottom is not None
+                else hyper.get("red_left_bottom")
+            )
+            or [-0.5, -0.4, -0.3]
+        )  # Default: -0.4
+        parameter_range_horizontal_left = (
+            as_list_or_none(
+                args.horizontal_left
+                if args.horizontal_left is not None
+                else hyper.get("horizontal_left")
+            )
+            or [-0.63, -0.6, -0.5]
+        )  # Default: -0.6
+        parameter_range_horizontal_right = (
+            as_list_or_none(
+                args.horizontal_right
+                if args.horizontal_right is not None
+                else hyper.get("horizontal_right")
+            )
+            or [0.5, 0.6, 0.63]
+        )  # Default: 0.6
 
         design_params, design_param_names = create_hohlraum_samples_from_param_range(
             parameter_range_grid_cell_size,
@@ -124,6 +280,7 @@ def main():
             hpc_operation_count=1,
             singularity_hpc=singularity_hpc,
             use_cuda=use_cuda,
+            quiet=args.quiet,
         )
         # wait_for_slurm_jobs(user=user, sleep_interval=10)
 
@@ -134,7 +291,7 @@ def main():
         else:
             print("Username could not be read from slurm config file.")
         qois = call_models(
-            design_params, hpc_operation_count=2, use_cuda=use_cuda
+            design_params, hpc_operation_count=2, use_cuda=use_cuda, quiet=args.quiet
         )
     else:
         qois = call_models(
@@ -142,6 +299,7 @@ def main():
             hpc_operation_count=0,
             singularity_hpc=singularity_hpc,
             use_cuda=use_cuda,
+            quiet=args.quiet,
         )
 
     if args.csv:
@@ -171,13 +329,20 @@ def main():
     return 0
 
 
-def call_models(design_params, hpc_operation_count, singularity_hpc=True, use_cuda=False):
+def call_models(
+    design_params,
+    hpc_operation_count,
+    singularity_hpc=True,
+    use_cuda=False,
+    quiet=False,
+):
     qois = []
     for column in design_params.T:
         input = column.tolist()
         input.append(hpc_operation_count)
         input.append(singularity_hpc)
         input.append(use_cuda)
+        input.append(quiet)
         res = model([input])
         qois.append(res[0])
 

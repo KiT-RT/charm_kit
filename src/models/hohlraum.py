@@ -32,6 +32,7 @@ def model(parameters):
     hpc_operation = parameters[0][10]
     singularity_hpc = parameters[0][11]
     use_cuda = bool(parameters[0][12]) if len(parameters[0]) > 12 else False
+    quiet = bool(parameters[0][13]) if len(parameters[0]) > 13 else False
     if use_cuda:
         singularity_hpc = 1
     if use_cuda and hpc_operation == 1:
@@ -121,10 +122,14 @@ def model(parameters):
         # Step 5: Run the C++ simulation
         if singularity_hpc == 1:
             print("Running simulation with singularity")
-            run_cpp_simulation_containerized(generated_cfg_file, use_cuda=use_cuda)
+            run_cpp_simulation_containerized(
+                generated_cfg_file,
+                use_cuda=use_cuda,
+                quiet=quiet,
+            )
         else:
             print("Running simulation without singularity")
-            run_cpp_simulation(generated_cfg_file)
+            run_cpp_simulation(generated_cfg_file, quiet=quiet)
     elif hpc_operation == 1:
         # Write slurm file
         write_slurm_file(

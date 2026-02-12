@@ -16,11 +16,10 @@ Preliminaries:
    git clone git@github.com:ScSteffen/CharmKiT.git
    ```
 
-3. Create a local Python environment and install requirements:
+3. Install Poetry and create the project environment:
    ```
-   python3 -m venv ./venv
-   source venv/bin/activate
-   pip install -r requirements.txt
+   python3 -m pip install --user poetry
+   poetry install
    ```
 
 4. Install [KiT-RT](https://github.com/KiT-RT/kitrt_code) as a submodule using the provided installer. (Requires root for container build.)
@@ -54,18 +53,54 @@ CharmKiT provides test-case drivers:
 - `run_lattice.py`
 - `run_hohlraum.py`
 
-Activate your environment first:
+Use Poetry to run commands in the project environment.
+
+Each script has its own CLI parser. They share execution flags, but design-parameter flags are test-case specific. Print all flags with:
 
 ```bash
-source venv/bin/activate
+poetry run python run_lattice.py --help
+poetry run python run_hohlraum.py --help
 ```
 
-Both scripts use the same execution flags:
+Execution and I/O flags:
 
-- `--use-slurm`: Submit jobs through SLURM.
-- `--use-singularity`: Run KiT-RT through the CPU Singularity image.
+- `--slurm`: Submit jobs through SLURM.
+- `--singularity`: Run KiT-RT through the CPU Singularity image.
 - `--cuda`: Run KiT-RT through the CUDA Singularity image (`--nv` is added automatically).
-- `--load-from-npz`: Load parameter samples from file (script-dependent behavior).
+- `--load-from-npz`: Load parameter samples from NPZ input (script-dependent behavior).
+- `--csv CSV`: Read design parameters from CSV and write QOIs back to that CSV.
+- `--config CONFIG`: Path to a TOML hyperparameter file.
+- `-q`, `--quiet`: Suppress solver stdout/stderr output.
+
+Shared parameter override flags:
+
+- `--grid-cell-size GRID_CELL_SIZE`: Override spatial resolution for all runs.
+- `--quad-order QUAD_ORDER`: Override angular quadrature order for all runs (must be even).
+
+Lattice-specific parameter flags:
+
+- `--abs-blue ABS_BLUE [ABS_BLUE ...]`: Override absorption coefficient(s) in blue lattice cells.
+- `--scatter-white SCATTER_WHITE [SCATTER_WHITE ...]`: Override scattering coefficient(s) in white lattice cells.
+
+Hohlraum-specific parameter flags:
+
+- `--green-center-x GREEN_CENTER_X [GREEN_CENTER_X ...]`
+- `--green-center-y GREEN_CENTER_Y [GREEN_CENTER_Y ...]`
+- `--red-right-top RED_RIGHT_TOP [RED_RIGHT_TOP ...]`
+- `--red-right-bottom RED_RIGHT_BOTTOM [RED_RIGHT_BOTTOM ...]`
+- `--red-left-top RED_LEFT_TOP [RED_LEFT_TOP ...]`
+- `--red-left-bottom RED_LEFT_BOTTOM [RED_LEFT_BOTTOM ...]`
+- `--horizontal-left HORIZONTAL_LEFT [HORIZONTAL_LEFT ...]`
+- `--horizontal-right HORIZONTAL_RIGHT [HORIZONTAL_RIGHT ...]`
+
+Default hyperparameter files:
+- `benchmarks/lattice/hyperparams.toml`
+- `benchmarks/hohlraum/hyperparams.toml`
+
+Precedence for hyperparameters is:
+1. Command-line arguments
+2. TOML values
+3. Script hardcoded defaults
 
 ### Supported run setups
 
@@ -82,9 +117,9 @@ Both scripts use the same execution flags:
 2. **Local mode + Singularity (CPU)**
 
    ```bash
-   python3 run_lattice.py --use-singularity
+   python3 run_lattice.py --singularity
    # or
-   python3 run_hohlraum.py --use-singularity
+   python3 run_hohlraum.py --singularity
    ```
 
    Uses image/executable:
@@ -104,9 +139,9 @@ Both scripts use the same execution flags:
 4. **SLURM mode, raw (no Singularity)**
 
    ```bash
-   python3 run_lattice.py --use-slurm
+   python3 run_lattice.py --slurm
    # or
-   python3 run_hohlraum.py --use-slurm
+   python3 run_hohlraum.py --slurm
    ```
 
    Generated SLURM scripts call: `srun ./KiT-RT/build/KiT-RT ...`.
@@ -114,9 +149,9 @@ Both scripts use the same execution flags:
 5. **SLURM mode + Singularity (CPU)**
 
    ```bash
-   python3 run_lattice.py --use-slurm --use-singularity
+   python3 run_lattice.py --slurm --singularity
    # or
-   python3 run_hohlraum.py --use-slurm --use-singularity
+   python3 run_hohlraum.py --slurm --singularity
    ```
 
    Generated SLURM scripts call:
@@ -124,7 +159,7 @@ Both scripts use the same execution flags:
 
 ### Not supported
 
-- `--use-slurm --cuda` is intentionally blocked.
+- `--slurm --cuda` is intentionally blocked.
   GPU mode is currently supported only for local Singularity runs (no SLURM).
 
 
