@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+KITRT_REPO_URL="${KITRT_REPO_URL:-git@github.com:KiT-RT/kitrt_code.git}"
+
 has_cuda_gpu() {
     if ! command -v nvidia-smi >/dev/null 2>&1; then
         return 1
@@ -9,14 +11,13 @@ has_cuda_gpu() {
 }
 
 # clone KiT-RT
-git clone git@github.com:CSMMLab/KiT-RT.git
+git clone "${KITRT_REPO_URL}" KiT-RT
 
 # go to KiT-RT directory
 cd KiT-RT
 
-# checkout the default branch and load submodules
-git fetch origin
-git checkout master
+# keep origin synchronized with configured upstream and load submodules
+git remote set-url origin "${KITRT_REPO_URL}"
 git submodule update --init --recursive
 
 # navigate to directory where the singularity scripts are located

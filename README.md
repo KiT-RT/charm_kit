@@ -23,7 +23,7 @@ Preliminaries:
    pip install -r requirements.txt
    ```
 
-4. Install [KiT-RT](https://github.com/CSMMLab/KiT-RT) as a submodule using the provided installer. (Requires root for container build.)
+4. Install [KiT-RT](https://github.com/KiT-RT/kitrt_code) as a submodule using the provided installer. (Requires root for container build.)
    ```
    bash install_KiT-RT.sh
    ```
