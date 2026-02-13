@@ -7,7 +7,6 @@ from src.config_utils import read_username_from_config
 from src.simulation_utils import execute_slurm_scripts, wait_for_slurm_jobs
 from src.general_utils import (
     create_hohlraum_samples_from_param_range,
-    load_hohlraum_samples_from_csv,
     delete_slurm_scripts,
     load_toml_hyperparameters,
 )
@@ -17,13 +16,11 @@ from src.general_utils import parse_hohlraum_args
 def main():
     args = parse_hohlraum_args()
     print(f"HPC mode = { args.use_slurm}")
-    print(f"Load from npz = {args.load_from_npz}")
     print(f"HPC with singularity = { args.use_singularity}")
     print(f"CUDA mode = {args.cuda}")
     print(f"Quiet mode = {args.quiet}")
 
     hpc_operation = args.use_slurm  # Flag when using HPC cluster
-    load_from_npz = args.load_from_npz
     use_cuda = args.cuda
     if use_cuda and hpc_operation:
         raise SystemExit(
@@ -66,70 +63,92 @@ def main():
 
         override_csv_column(
             df,
-            args.green_center_x
-            if args.green_center_x is not None
-            else hyper.get("green_center_x"),
+            (
+                args.green_center_x
+                if args.green_center_x is not None
+                else hyper.get("green_center_x")
+            ),
             "green_center_x",
             "--green-center-x",
         )
         override_csv_column(
             df,
-            args.green_center_y
-            if args.green_center_y is not None
-            else hyper.get("green_center_y"),
+            (
+                args.green_center_y
+                if args.green_center_y is not None
+                else hyper.get("green_center_y")
+            ),
             "green_center_y",
             "--green-center-y",
         )
         override_csv_column(
             df,
-            args.red_right_top if args.red_right_top is not None else hyper.get("red_right_top"),
+            (
+                args.red_right_top
+                if args.red_right_top is not None
+                else hyper.get("red_right_top")
+            ),
             "red_right_top",
             "--red-right-top",
         )
         override_csv_column(
             df,
-            args.red_right_bottom
-            if args.red_right_bottom is not None
-            else hyper.get("red_right_bottom"),
+            (
+                args.red_right_bottom
+                if args.red_right_bottom is not None
+                else hyper.get("red_right_bottom")
+            ),
             "red_right_bottom",
             "--red-right-bottom",
         )
         override_csv_column(
             df,
-            args.red_left_top if args.red_left_top is not None else hyper.get("red_left_top"),
+            (
+                args.red_left_top
+                if args.red_left_top is not None
+                else hyper.get("red_left_top")
+            ),
             "red_left_top",
             "--red-left-top",
         )
         override_csv_column(
             df,
-            args.red_left_bottom
-            if args.red_left_bottom is not None
-            else hyper.get("red_left_bottom"),
+            (
+                args.red_left_bottom
+                if args.red_left_bottom is not None
+                else hyper.get("red_left_bottom")
+            ),
             "red_left_bottom",
             "--red-left-bottom",
         )
         override_csv_column(
             df,
-            args.horizontal_left
-            if args.horizontal_left is not None
-            else hyper.get("horizontal_left"),
+            (
+                args.horizontal_left
+                if args.horizontal_left is not None
+                else hyper.get("horizontal_left")
+            ),
             "horizontal_left",
             "--horizontal-left",
         )
         override_csv_column(
             df,
-            args.horizontal_right
-            if args.horizontal_right is not None
-            else hyper.get("horizontal_right"),
+            (
+                args.horizontal_right
+                if args.horizontal_right is not None
+                else hyper.get("horizontal_right")
+            ),
             "horizontal_right",
             "--horizontal-right",
         )
         # Allow overwriting spatial and angular resolution
         override_csv_column(
             df,
-            args.grid_cell_size
-            if args.grid_cell_size is not None
-            else hyper.get("grid_cell_size"),
+            (
+                args.grid_cell_size
+                if args.grid_cell_size is not None
+                else hyper.get("grid_cell_size")
+            ),
             "grid_cell_size",
             "--grid-cell-size",
         )
@@ -144,20 +163,24 @@ def main():
         # left_red_top, left_red_bottom, right_red_top, right_red_bottom,
         # horizontal_left, horizontal_right, green_center_x, green_center_y,
         # grid_cell_size, quad_order
-        design_params = df[
-            [
-                "red_left_top",
-                "red_left_bottom",
-                "red_right_top",
-                "red_right_bottom",
-                "horizontal_left",
-                "horizontal_right",
-                "green_center_x",
-                "green_center_y",
-                "grid_cell_size",
-                "quad_order",
+        design_params = (
+            df[
+                [
+                    "red_left_top",
+                    "red_left_bottom",
+                    "red_right_top",
+                    "red_right_bottom",
+                    "horizontal_left",
+                    "horizontal_right",
+                    "green_center_x",
+                    "green_center_y",
+                    "grid_cell_size",
+                    "quad_order",
+                ]
             ]
-        ].to_numpy().T
+            .to_numpy()
+            .T
+        )
         design_param_names = np.array(
             [
                 "pos_red_left_top",
@@ -172,89 +195,59 @@ def main():
                 "grid_quad_order",
             ]
         )
-    elif load_from_npz:
-        design_params, design_param_names = load_hohlraum_samples_from_csv()
     else:
         # --- Define parameter ranges ---
-
-        #  characteristic length of the cells:  #grid cells = O(1/cell_size^2)
         parameter_range_grid_cell_size = as_list_or_none(
             args.grid_cell_size
             if args.grid_cell_size is not None
             else hyper.get("grid_cell_size")
         ) or [0.0075]
-
-        # quadrature order (must be an even number):  #velocity grid cells = O(order^2)
         parameter_range_quad_order = as_list_or_none(
             args.quad_order if args.quad_order is not None else hyper.get("quad_order")
         ) or [6]
         if any(int(q) % 2 != 0 for q in parameter_range_quad_order):
             raise SystemExit("ERROR: --quad-order must be an even number.")
-        # balance the two roughly (see Paper Fig 6)
-
-        # Define the geometry settings of the test case
 
         parameter_range_green_center_x = as_list_or_none(
             args.green_center_x
             if args.green_center_x is not None
             else hyper.get("green_center_x")
-        ) or [-0.1, 0.0, 0.1]  # Default: 0
-        parameter_range_green_center_y = (
-            as_list_or_none(
-                args.green_center_y
-                if args.green_center_y is not None
-                else hyper.get("green_center_y")
-            )
-            or [-0.075, 0.0, 0.075]
-        )  # Default: 0
-        parameter_range_red_right_top = (
-            as_list_or_none(
-                args.red_right_top
-                if args.red_right_top is not None
-                else hyper.get("red_right_top")
-            )
-            or [0.3, 0.4, 0.5]
-        )  # Default: 0.4
-        parameter_range_red_right_bottom = (
-            as_list_or_none(
-                args.red_right_bottom
-                if args.red_right_bottom is not None
-                else hyper.get("red_right_bottom")
-            )
-            or [-0.5, -0.4, -0.3]
-        )  # Default: -0.4
-        parameter_range_red_left_top = (
-            as_list_or_none(
-                args.red_left_top
-                if args.red_left_top is not None
-                else hyper.get("red_left_top")
-            )
-            or [0.3, 0.4, 0.5]
-        )  # Default: 0.4
-        parameter_range_red_left_bottom = (
-            as_list_or_none(
-                args.red_left_bottom
-                if args.red_left_bottom is not None
-                else hyper.get("red_left_bottom")
-            )
-            or [-0.5, -0.4, -0.3]
-        )  # Default: -0.4
-        parameter_range_horizontal_left = (
-            as_list_or_none(
-                args.horizontal_left
-                if args.horizontal_left is not None
-                else hyper.get("horizontal_left")
-            )
-            or [-0.63, -0.6, -0.5]
-        )  # Default: -0.6
-        parameter_range_horizontal_right = (
-            as_list_or_none(
-                args.horizontal_right
-                if args.horizontal_right is not None
-                else hyper.get("horizontal_right")
-            )
-            or [0.5, 0.6, 0.63]
-        )  # Default: 0.6
+        ) or [0.0]
+        parameter_range_green_center_y = as_list_or_none(
+            args.green_center_y
+            if args.green_center_y is not None
+            else hyper.get("green_center_y")
+        ) or [0.0]
+        parameter_range_red_right_top = as_list_or_none(
+            args.red_right_top
+            if args.red_right_top is not None
+            else hyper.get("red_right_top")
+        ) or [0.4]
+        parameter_range_red_right_bottom = as_list_or_none(
+            args.red_right_bottom
+            if args.red_right_bottom is not None
+            else hyper.get("red_right_bottom")
+        ) or [-0.4]
+        parameter_range_red_left_top = as_list_or_none(
+            args.red_left_top
+            if args.red_left_top is not None
+            else hyper.get("red_left_top")
+        ) or [0.4]
+        parameter_range_red_left_bottom = as_list_or_none(
+            args.red_left_bottom
+            if args.red_left_bottom is not None
+            else hyper.get("red_left_bottom")
+        ) or [-0.4]
+        parameter_range_horizontal_left = as_list_or_none(
+            args.horizontal_left
+            if args.horizontal_left is not None
+            else hyper.get("horizontal_left")
+        ) or [-0.6]
+        parameter_range_horizontal_right = as_list_or_none(
+            args.horizontal_right
+            if args.horizontal_right is not None
+            else hyper.get("horizontal_right")
+        ) or [0.6]
 
         design_params, design_param_names = create_hohlraum_samples_from_param_range(
             parameter_range_grid_cell_size,
@@ -269,13 +262,19 @@ def main():
             parameter_range_horizontal_right,
         )
 
+    def safe_call_models(*model_args, **model_kwargs):
+        try:
+            return call_models(*model_args, **model_kwargs)
+        except (RuntimeError, FileNotFoundError) as e:
+            raise SystemExit(f"ERROR: {e}") from e
+
     if hpc_operation:
         print("==== Execute HPC version ====")
         directory = "./benchmarks/hohlraum/slurm_scripts/"
         user = read_username_from_config("./slurm_config.txt")
 
         delete_slurm_scripts(directory)  # delete existing slurm files for hohlraum
-        call_models(
+        safe_call_models(
             design_params,
             hpc_operation_count=1,
             singularity_hpc=singularity_hpc,
@@ -290,11 +289,11 @@ def main():
             wait_for_slurm_jobs(user=user, sleep_interval=10)
         else:
             print("Username could not be read from slurm config file.")
-        qois = call_models(
+        qois = safe_call_models(
             design_params, hpc_operation_count=2, use_cuda=use_cuda, quiet=args.quiet
         )
     else:
-        qois = call_models(
+        qois = safe_call_models(
             design_params,
             hpc_operation_count=0,
             singularity_hpc=singularity_hpc,
@@ -305,8 +304,9 @@ def main():
     if args.csv:
         # Add all QOI columns to the CSV
         qoi_names = get_qois_col_names()
-        for i in range(qois.shape[1]):
-            df[qoi_names[i]] = qois[:, i]
+        qoi_df = pd.DataFrame(qois, columns=qoi_names, index=df.index)
+        # Replace existing QOI columns in one concat to avoid DataFrame fragmentation.
+        df = pd.concat([df.drop(columns=qoi_names, errors="ignore"), qoi_df], axis=1)
         df.to_csv(args.csv, index=False)
         print(f"Updated CSV with QOI columns: {args.csv}")
     else:

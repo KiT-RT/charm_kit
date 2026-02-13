@@ -1,5 +1,9 @@
 
-# charm_kit
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE) [![GitHub Stars](https://img.shields.io/github/stars/KiT-RT/CharmKiT)](https://github.com/KiT-RT/CharmKiT/stargazers)
+[![Tests](https://github.com/KiT-RT/CharmKiT/actions/workflows/tests.yml/badge.svg)](https://github.com/KiT-RT/CharmKiT/actions/workflows/tests.yml)
+
+# charm_kit: A wrapper for KiT-RT to conduct simulation sweeps fast
+
 
 charm_kit is a benchmarking suite for the CharmNet project, providing automated parameter studies and test case management for the [KiT-RT PDE simulator](https://kit-rt.readthedocs.io/en/develop/index.html). It enables reproducible runs of radiative transfer test cases such as the lattice and hohlraum setups, using Python scripts to manage parameter sweeps, configuration, and result collection. charm_kit supports both high-performance computing (HPC) and local (no-HPC) execution modes, leveraging Singularity containers for reproducibility.
 
@@ -33,6 +37,15 @@ Preliminaries:
    bash update_KiT-RT.sh
    ```
    If on a cluster without root, build the container locally and upload it to `charm_kit/kitrt_code/tools/singularity/`.
+
+## Testing
+
+Run unit tests from the repo root:
+
+```bash
+poetry install --with dev
+poetry run pytest -q
+```
 
 
 ## How charm_kit Works
@@ -68,7 +81,6 @@ Execution and I/O flags:
 - `--slurm`: Submit jobs through SLURM.
 - `--singularity`: Run KiT-RT through the CPU Singularity image.
 - `--cuda`: Run KiT-RT through the CUDA Singularity image (`--nv` is added automatically).
-- `--load-from-npz`: Load parameter samples from NPZ input (script-dependent behavior).
 - `--csv CSV`: Read design parameters from CSV and write QOIs back to that CSV.
 - `--config CONFIG`: Path to a TOML hyperparameter file.
 - `-q`, `--quiet`: Suppress solver stdout/stderr output.
@@ -108,9 +120,9 @@ Precedence for hyperparameters is:
 1. **Local mode, raw (no Singularity)**
 
    ```bash
-   python3 run_lattice.py
+   poetry run python run_lattice.py
    # or
-   python3 run_hohlraum.py
+   poetry run python run_hohlraum.py
    ```
 
    Uses local executable: `./kitrt_code/build/KiT-RT`.
@@ -118,9 +130,9 @@ Precedence for hyperparameters is:
 2. **Local mode + Singularity (CPU)**
 
    ```bash
-   python3 run_lattice.py --singularity
+   poetry run python run_lattice.py --singularity
    # or
-   python3 run_hohlraum.py --singularity
+   poetry run python run_hohlraum.py --singularity
    ```
 
    Uses image/executable:
@@ -129,9 +141,9 @@ Precedence for hyperparameters is:
 3. **Local mode + Singularity + GPU**
 
    ```bash
-   python3 run_lattice.py --cuda
+   poetry run python run_lattice.py --cuda
    # or
-   python3 run_hohlraum.py --cuda
+   poetry run python run_hohlraum.py --cuda
    ```
 
    Uses image/executable:
@@ -140,9 +152,9 @@ Precedence for hyperparameters is:
 4. **SLURM mode, raw (no Singularity)**
 
    ```bash
-   python3 run_lattice.py --slurm
+   poetry run python run_lattice.py --slurm
    # or
-   python3 run_hohlraum.py --slurm
+   poetry run python run_hohlraum.py --slurm
    ```
 
    Generated SLURM scripts call: `srun ./kitrt_code/build/KiT-RT ...`.
@@ -150,9 +162,9 @@ Precedence for hyperparameters is:
 5. **SLURM mode + Singularity (CPU)**
 
    ```bash
-   python3 run_lattice.py --slurm --singularity
+   poetry run python run_lattice.py --slurm --singularity
    # or
-   python3 run_hohlraum.py --slurm --singularity
+   poetry run python run_hohlraum.py --slurm --singularity
    ```
 
    Generated SLURM scripts call:

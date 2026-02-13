@@ -1,0 +1,10 @@
+[hyperparameters]
+# Spatial resolution range (characteristic mesh cell size)
+grid_cell_size = [0.01]
+
+# Angular quadrature order range (must be even)
+quad_order = [4]
+
+# Material parameter ranges
+abs_blue = [10.0]
+scatter_white = [1.0]

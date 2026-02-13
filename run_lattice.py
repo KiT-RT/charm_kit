@@ -8,7 +8,6 @@ from src.models.lattice import get_qois_col_names, model
 from src.simulation_utils import execute_slurm_scripts, wait_for_slurm_jobs
 from src.general_utils import (
     create_lattice_samples_from_param_range,
-    load_lattice_samples_from_npz,
     delete_slurm_scripts,
     load_toml_hyperparameters,
 )
@@ -19,13 +18,11 @@ from src.general_utils import parse_lattice_args
 def main():
     args = parse_lattice_args()
     print(f"HPC mode = { args.use_slurm}")
-    print(f"Load from npz = {args.load_from_npz}")
     print(f"HPC with singularity = { args.use_singularity}")
     print(f"CUDA mode = {args.cuda}")
     print(f"Quiet mode = {args.quiet}")
 
     hpc_operation = args.use_slurm  # Flag when using HPC cluster
-    load_from_npz = args.load_from_npz
     use_cuda = args.cuda
     if use_cuda and hpc_operation:
         raise SystemExit(
@@ -104,18 +101,14 @@ def main():
         design_param_names = np.array(
             ["absorption_blue", "scattering_white", "grid_cl", "grid_quad_order"]
         )
-    elif load_from_npz:  # TODO
-        raise NotImplementedError
-        design_params, design_param_names = load_lattice_samples_from_npz(
-            "sampling/pilot-study-samples-hohlraum-05-29-24.npz"
-        )
-        exit("TODO")
     else:
         # --- Define parameter ranges ---
 
         #  characteristic length of the cells:  #grid cells = O(1/cell_size^2)
         parameter_range_grid_cell_size = as_list_or_none(
-            args.grid_cell_size if args.grid_cell_size is not None else hyper.get("grid_cell_size")
+            args.grid_cell_size
+            if args.grid_cell_size is not None
+            else hyper.get("grid_cell_size")
         ) or [0.01]
 
         # quadrature order (must be an even number):  #velocity grid cells = O(order^2)

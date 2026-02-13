@@ -1,3 +1,4 @@
 gmsh
 numpy 
 pandas
+pytest

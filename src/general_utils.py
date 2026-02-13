@@ -24,22 +24,10 @@ def _add_common_execution_args(parser):
         help=argparse.SUPPRESS,
     )
     parser.add_argument(
-        "--load-from-npz",
-        action="store_true",
-        help="Load parameter samples from NPZ input",
-    )
-    parser.add_argument(
         "--singularity",
         dest="use_singularity",
         action="store_true",
         help="Run KiT-RT through the CPU Singularity image",
-    )
-    # Backward-compatible alias (hidden from --help)
-    parser.add_argument(
-        "--use-singularity",
-        dest="use_singularity",
-        action="store_true",
-        help=argparse.SUPPRESS,
     )
     parser.add_argument(
         "--csv",
