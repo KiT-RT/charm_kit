@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-KITRT_REPO_URL="${KITRT_REPO_URL:-git@github.com:KiT-RT/kitrt_code.git}"
+KITRT_REPO_URL="${KITRT_REPO_URL:-https://github.com/KiT-RT/kitrt_code.git}"
 
 has_cuda_gpu() {
     if ! command -v nvidia-smi >/dev/null 2>&1; then
