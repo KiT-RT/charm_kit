@@ -7,7 +7,6 @@ from src.config_utils import read_username_from_config
 from src.simulation_utils import execute_slurm_scripts, wait_for_slurm_jobs
 from src.general_utils import (
     create_hohlraum_samples_from_param_range,
-    load_hohlraum_samples_from_csv,
     delete_slurm_scripts,
     load_toml_hyperparameters,
 )
@@ -17,13 +16,11 @@ from src.general_utils import parse_hohlraum_args
 def main():
     args = parse_hohlraum_args()
     print(f"HPC mode = { args.use_slurm}")
-    print(f"Load from npz = {args.load_from_npz}")
     print(f"HPC with singularity = { args.use_singularity}")
     print(f"CUDA mode = {args.cuda}")
     print(f"Quiet mode = {args.quiet}")
 
     hpc_operation = args.use_slurm  # Flag when using HPC cluster
-    load_from_npz = args.load_from_npz
     use_cuda = args.cuda
     if use_cuda and hpc_operation:
         raise SystemExit(
@@ -172,8 +169,6 @@ def main():
                 "grid_quad_order",
             ]
         )
-    elif load_from_npz:
-        design_params, design_param_names = load_hohlraum_samples_from_csv()
     else:
         # --- Define parameter ranges ---
 

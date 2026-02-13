@@ -1,6 +1,9 @@
 
 # charm_kit
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE) [![GitHub Stars](https://img.shields.io/github/stars/KiT-RT/CharmKiT)](https://github.com/KiT-RT/CharmKiT/stargazers)
+[![Tests](https://github.com/KiT-RT/CharmKiT/actions/workflows/tests.yml/badge.svg)](https://github.com/KiT-RT/CharmKiT/actions/workflows/tests.yml)
+
 charm_kit is a benchmarking suite for the CharmNet project, providing automated parameter studies and test case management for the [KiT-RT PDE simulator](https://kit-rt.readthedocs.io/en/develop/index.html). It enables reproducible runs of radiative transfer test cases such as the lattice and hohlraum setups, using Python scripts to manage parameter sweeps, configuration, and result collection. charm_kit supports both high-performance computing (HPC) and local (no-HPC) execution modes, leveraging Singularity containers for reproducibility.
 
 
@@ -68,7 +71,6 @@ Execution and I/O flags:
 - `--slurm`: Submit jobs through SLURM.
 - `--singularity`: Run KiT-RT through the CPU Singularity image.
 - `--cuda`: Run KiT-RT through the CUDA Singularity image (`--nv` is added automatically).
-- `--load-from-npz`: Load parameter samples from NPZ input (script-dependent behavior).
 - `--csv CSV`: Read design parameters from CSV and write QOIs back to that CSV.
 - `--config CONFIG`: Path to a TOML hyperparameter file.
 - `-q`, `--quiet`: Suppress solver stdout/stderr output.
