@@ -148,6 +148,10 @@ Precedence for hyperparameters is:
 
    Uses image/executable:
    `kitrt_code/tools/singularity/kit_rt_MPI_cuda.sif` and `./kitrt_code/build_singularity_cuda/KiT-RT`.
+   CUDA runs are dispatched as:
+   `singularity exec --nv ... mpirun -np <gpu_count> ./kitrt_code/build_singularity_cuda/KiT-RT ...`.
+   `<gpu_count>` is auto-detected from `CUDA_VISIBLE_DEVICES` or `nvidia-smi`.
+   Override rank count with `KITRT_CUDA_MPI_RANKS=<N>`.
 
 4. **SLURM mode, raw (no Singularity)**
 
