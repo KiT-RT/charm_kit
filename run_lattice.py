@@ -106,7 +106,9 @@ def main():
 
         #  characteristic length of the cells:  #grid cells = O(1/cell_size^2)
         parameter_range_grid_cell_size = as_list_or_none(
-            args.grid_cell_size if args.grid_cell_size is not None else hyper.get("grid_cell_size")
+            args.grid_cell_size
+            if args.grid_cell_size is not None
+            else hyper.get("grid_cell_size")
         ) or [0.01]
 
         # quadrature order (must be an even number):  #velocity grid cells = O(order^2)

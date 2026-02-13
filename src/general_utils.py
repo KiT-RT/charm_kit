@@ -24,6 +24,19 @@ def _add_common_execution_args(parser):
         help=argparse.SUPPRESS,
     )
     parser.add_argument(
+<<<<<<< HEAD
+        "--singularity",
+        dest="use_singularity",
+        action="store_true",
+        help="Run KiT-RT through the CPU Singularity image",
+=======
+        "--load-from-npz",
+        action="store_true",
+        help="Load parameter samples from NPZ input",
+>>>>>>> ca586e4bdf84b4cb5fc66bf6e34578e45736e9b3
+    )
+    # Backward-compatible alias (hidden from --help)
+    parser.add_argument(
         "--singularity",
         dest="use_singularity",
         action="store_true",

@@ -169,10 +169,10 @@ def main():
                 "grid_quad_order",
             ]
         )
-    else:
-        # --- Define parameter ranges ---
-
-        #  characteristic length of the cells:  #grid cells = O(1/cell_size^2)
+<<<<<<< HEAD
+=======
+    elif load_from_npz:
+        design_params, design_param_names = load_hohlraum_samples_from_csv()
         parameter_range_grid_cell_size = as_list_or_none(
             args.grid_cell_size
             if args.grid_cell_size is not None
