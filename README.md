@@ -38,6 +38,15 @@ Preliminaries:
    ```
    If on a cluster without root, build the container locally and upload it to `charm_kit/kitrt_code/tools/singularity/`.
 
+## Testing
+
+Run unit tests from the repo root:
+
+```bash
+poetry install --with dev
+poetry run pytest -q
+```
+
 
 ## How charm_kit Works
 
@@ -111,9 +120,9 @@ Precedence for hyperparameters is:
 1. **Local mode, raw (no Singularity)**
 
    ```bash
-   python3 run_lattice.py
+   poetry run python run_lattice.py
    # or
-   python3 run_hohlraum.py
+   poetry run python run_hohlraum.py
    ```
 
    Uses local executable: `./kitrt_code/build/KiT-RT`.
@@ -121,9 +130,9 @@ Precedence for hyperparameters is:
 2. **Local mode + Singularity (CPU)**
 
    ```bash
-   python3 run_lattice.py --singularity
+   poetry run python run_lattice.py --singularity
    # or
-   python3 run_hohlraum.py --singularity
+   poetry run python run_hohlraum.py --singularity
    ```
 
    Uses image/executable:
@@ -132,9 +141,9 @@ Precedence for hyperparameters is:
 3. **Local mode + Singularity + GPU**
 
    ```bash
-   python3 run_lattice.py --cuda
+   poetry run python run_lattice.py --cuda
    # or
-   python3 run_hohlraum.py --cuda
+   poetry run python run_hohlraum.py --cuda
    ```
 
    Uses image/executable:
@@ -143,9 +152,9 @@ Precedence for hyperparameters is:
 4. **SLURM mode, raw (no Singularity)**
 
    ```bash
-   python3 run_lattice.py --slurm
+   poetry run python run_lattice.py --slurm
    # or
-   python3 run_hohlraum.py --slurm
+   poetry run python run_hohlraum.py --slurm
    ```
 
    Generated SLURM scripts call: `srun ./kitrt_code/build/KiT-RT ...`.
@@ -153,9 +162,9 @@ Precedence for hyperparameters is:
 5. **SLURM mode + Singularity (CPU)**
 
    ```bash
-   python3 run_lattice.py --slurm --singularity
+   poetry run python run_lattice.py --slurm --singularity
    # or
-   python3 run_hohlraum.py --slurm --singularity
+   poetry run python run_hohlraum.py --slurm --singularity
    ```
 
    Generated SLURM scripts call:
