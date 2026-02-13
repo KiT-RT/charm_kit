@@ -1,6 +1,6 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE) [![GitHub Stars](https://img.shields.io/github/stars/KiT-RT/CharmKiT)](https://github.com/KiT-RT/CharmKiT/stargazers)
-[![Tests](https://github.com/KiT-RT/CharmKiT/actions/workflows/tests.yml/badge.svg)](https://github.com/KiT-RT/CharmKiT/actions/workflows/tests.yml)
+[![Tests](https://github.com/KiT-RT/charm_kit/actions/workflows/tests.yml/badge.svg)](https://github.com/KiT-RT/charm_kit/actions/workflows/tests.yml)
 
 # charm_kit: A wrapper for KiT-RT to conduct simulation sweeps fast
 
