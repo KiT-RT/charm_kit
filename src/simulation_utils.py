@@ -184,6 +184,34 @@ def _find_rocm_executable():
     return None
 
 
+def _resolve_container_runtime():
+    runtime_override = os.environ.get("KITRT_CONTAINER_RUNTIME")
+    if runtime_override:
+        runtime = runtime_override.strip().lower()
+        if runtime not in ("apptainer", "singularity"):
+            raise RuntimeError(
+                "Invalid KITRT_CONTAINER_RUNTIME value. Expected "
+                "'apptainer' or 'singularity', "
+                f"got: {runtime_override!r}"
+            )
+        if shutil.which(runtime) is None:
+            raise RuntimeError(
+                f"KITRT_CONTAINER_RUNTIME is set to {runtime!r}, "
+                "but that executable was not found in PATH."
+            )
+        return runtime
+
+    if shutil.which("apptainer") is not None:
+        return "apptainer"
+    if shutil.which("singularity") is not None:
+        return "singularity"
+
+    raise RuntimeError(
+        "Containerized KiT-RT run failed: neither 'apptainer' nor "
+        "'singularity' was found in PATH."
+    )
+
+
 def _run_and_raise(command, mode_label, quiet=False):
     try:
         if quiet:
@@ -242,13 +270,15 @@ def run_cpp_simulation(config_file, quiet=False):
 
 
 def run_cpp_simulation_containerized(config_file, use_cuda=False, quiet=False):
+    container_runtime = _resolve_container_runtime()
+
     # Path to the C++ executable
     if use_cuda:
         # Keep the existing public flag, but select CUDA or ROCm at runtime.
         if _query_nvidia_smi_gpu_count() >= 1:
             mpi_ranks = _resolve_cuda_mpi_ranks(quiet=quiet)
             singularity_command = [
-                "singularity",
+                container_runtime,
                 "exec",
                 "--nv",
                 "kitrt_code/tools/singularity/kit_rt_MPI_cuda.sif",
@@ -280,7 +310,7 @@ def run_cpp_simulation_containerized(config_file, use_cuda=False, quiet=False):
 
             mpi_ranks = _resolve_rocm_mpi_ranks(quiet=quiet)
             singularity_command = [
-                "singularity",
+                container_runtime,
                 "exec",
                 "--rocm",
                 rocm_image,
@@ -298,7 +328,7 @@ def run_cpp_simulation_containerized(config_file, use_cuda=False, quiet=False):
                 )
             mpi_ranks = _resolve_cuda_mpi_ranks(quiet=quiet)
             singularity_command = [
-                "singularity",
+                container_runtime,
                 "exec",
                 "--nv",
                 "kitrt_code/tools/singularity/kit_rt_MPI_cuda.sif",
@@ -310,7 +340,7 @@ def run_cpp_simulation_containerized(config_file, use_cuda=False, quiet=False):
             ]
     else:
         singularity_command = [
-            "singularity",
+            container_runtime,
             "exec",
             "kitrt_code/tools/singularity/kit_rt.sif",
             "./kitrt_code/build_singularity/KiT-RT",
