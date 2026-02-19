@@ -28,6 +28,20 @@ def _get_rocm_visible_device_count():
     return None
 
 
+def _has_cuda_gpu():
+    visible_count = _get_cuda_visible_device_count()
+    if visible_count is not None:
+        return visible_count >= 1
+    return _query_nvidia_smi_gpu_count() >= 1
+
+
+def _has_rocm_gpu():
+    visible_count = _get_rocm_visible_device_count()
+    if visible_count is not None:
+        return visible_count >= 1
+    return _query_rocm_smi_gpu_count() >= 1
+
+
 def _query_nvidia_smi_gpu_count():
     try:
         result = subprocess.run(
@@ -275,7 +289,7 @@ def run_cpp_simulation_containerized(config_file, use_cuda=False, quiet=False):
     # Path to the C++ executable
     if use_cuda:
         # Keep the existing public flag, but select CUDA or ROCm at runtime.
-        if _query_nvidia_smi_gpu_count() >= 1:
+        if _has_cuda_gpu():
             mpi_ranks = _resolve_cuda_mpi_ranks(quiet=quiet)
             singularity_command = [
                 container_runtime,
@@ -288,7 +302,7 @@ def run_cpp_simulation_containerized(config_file, use_cuda=False, quiet=False):
                 "./kitrt_code/build_singularity_cuda/KiT-RT",
                 config_file,
             ]
-        elif _is_rocm_installed():
+        elif _is_rocm_installed() and _has_rocm_gpu():
             rocm_image = _find_rocm_container_image()
             if rocm_image is None:
                 raise RuntimeError(
@@ -323,19 +337,14 @@ def run_cpp_simulation_containerized(config_file, use_cuda=False, quiet=False):
         else:
             if not quiet:
                 print(
-                    "CUDA GPUs were not detected and ROCm runtime is not available; "
-                    "trying CUDA container path."
+                    "CUDA GPUs were not detected and no ROCm GPU fallback is available; "
+                    "running CPU KiT-RT container path."
                 )
-            mpi_ranks = _resolve_cuda_mpi_ranks(quiet=quiet)
             singularity_command = [
                 container_runtime,
                 "exec",
-                "--nv",
-                "kitrt_code/tools/singularity/kit_rt_MPI_cuda.sif",
-                "mpirun",
-                "-np",
-                mpi_ranks,
-                "./kitrt_code/build_singularity_cuda/KiT-RT",
+                "kitrt_code/tools/singularity/kit_rt.sif",
+                "./kitrt_code/build_singularity/KiT-RT",
                 config_file,
             ]
     else:

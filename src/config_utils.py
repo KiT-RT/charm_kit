@@ -3,6 +3,49 @@ import os
 import shutil
 import subprocess
 from src.general_utils import replace_next_line
+from src.simulation_utils import _resolve_container_runtime
+
+
+def _run_gmsh(input_geo, output_mesh, mesh_format):
+    container_runtime = _resolve_container_runtime()
+    cpu_image = "kitrt_code/tools/singularity/kit_rt.sif"
+    if not os.path.exists(cpu_image):
+        raise RuntimeError(
+            "CPU KiT-RT container image not found: "
+            "kitrt_code/tools/singularity/kit_rt.sif"
+        )
+
+    gmsh_command = [
+        container_runtime,
+        "exec",
+        cpu_image,
+        "gmsh",
+        input_geo,
+        "-2",
+        "-format",
+        mesh_format,
+        "-save_all",
+        "-o",
+        output_mesh,
+    ]
+
+    result = subprocess.run(
+        gmsh_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True
+    )
+    if result.returncode != 0:
+        err = (result.stderr or result.stdout or "").strip()
+        raise RuntimeError(
+            f"gmsh mesh generation failed in container with return code {result.returncode}. "
+            f"Command: {' '.join(gmsh_command)}. "
+            f"Stderr: {err or 'no output'}"
+        )
+
+
+def _normalize_numeric_label(value):
+    try:
+        return format(float(value), ".15g")
+    except (TypeError, ValueError):
+        return str(value)
 
 
 def read_config_file(config_file):
@@ -107,13 +150,12 @@ def update_quarter_hohlraum_mesh_file(n_cell, filepath):
         if os.path.exists(filename_con):
             os.remove(filename_con)
 
-        os.system(
-            f"gmsh {filename_geo_backup} -2 -format su2 -save_all -o {filename_su2}"
-        )
-        os.system(
-            f"gmsh {filename_geo_backup} -2 -format vtk -save_all -o {filename_vtk}"
-        )
-        os.remove(filename_geo_backup)
+        try:
+            _run_gmsh(filename_geo_backup, filename_su2, "su2")
+            _run_gmsh(filename_geo_backup, filename_vtk, "vtk")
+        finally:
+            if os.path.exists(filename_geo_backup):
+                os.remove(filename_geo_backup)
 
     return f"quarter_hohlraum_p{n_cell}.su2"
 
@@ -143,13 +185,12 @@ def update_sym_hohlraum_mesh_file(n_cell, filepath):
             os.remove(filename_con)
 
         print("saving mesh with n_cell = ", n_cell)
-        os.system(
-            f"gmsh {filename_geo_backup} -2 -format su2 -save_all -o {filename_su2}"
-        )
-        os.system(
-            f"gmsh {filename_geo_backup} -2 -format vtk -save_all -o {filename_vtk}"
-        )
-        os.remove(filename_geo_backup)
+        try:
+            _run_gmsh(filename_geo_backup, filename_su2, "su2")
+            _run_gmsh(filename_geo_backup, filename_vtk, "vtk")
+        finally:
+            if os.path.exists(filename_geo_backup):
+                os.remove(filename_geo_backup)
 
     return f"sym_hohlraum_n{n_cell}.su2"
 
@@ -231,11 +272,12 @@ def update_var_hohlraum_mesh_file(
         #    # os.remove(slurm_script_path)
         #
         # else:
-        os.system(
-            f"gmsh {filename_geo_backup} -2 -format su2 -save_all -o {filename_su2}"
-        )
-        # os.system(f"gmsh {filename_geo_backup} -2 -format vtk -save_all -o {filename_vtk}")
-        os.remove(filename_geo_backup)
+        try:
+            _run_gmsh(filename_geo_backup, filename_su2, "su2")
+            # os.system(f"gmsh {filename_geo_backup} -2 -format vtk -save_all -o {filename_vtk}")
+        finally:
+            if os.path.exists(filename_geo_backup):
+                os.remove(filename_geo_backup)
     return unique_name + ".su2"
 
 
@@ -308,20 +350,22 @@ def update_var_quarter_hohlraum_mesh_file(
         #    os.remove(slurm_script_path)
         #
         # else:
-        os.system(
-            f"gmsh {filename_geo_backup} -2 -format su2 -save_all -o {filename_su2}"
-        )
-        # os.system(f"gmsh {filename_geo_backup} -2 -format vtk -save_all -o {filename_vtk}")
-        os.remove(filename_geo_backup)
+        try:
+            _run_gmsh(filename_geo_backup, filename_su2, "su2")
+            # os.system(f"gmsh {filename_geo_backup} -2 -format vtk -save_all -o {filename_vtk}")
+        finally:
+            if os.path.exists(filename_geo_backup):
+                os.remove(filename_geo_backup)
     return unique_name + ".su2"
 
 
 def update_lattice_mesh_file(n_cell, filepath, rectangular_mesh=False):
+    n_cell_label = _normalize_numeric_label(n_cell)
     filename_geo = filepath + "lattice_triangular.geo"
     filename_geo_backup = filepath + "lattice_triangular_backup.geo"
 
-    filename_su2 = filepath + f"lattice_p{n_cell}.su2"
-    filename_con = filepath + f"lattice_p{n_cell}.con"
+    filename_su2 = filepath + f"lattice_p{n_cell_label}.su2"
+    filename_con = filepath + f"lattice_p{n_cell_label}.con"
 
     if not os.path.exists(filename_su2):
         shutil.copy(filename_geo, filename_geo_backup)
@@ -332,30 +376,32 @@ def update_lattice_mesh_file(n_cell, filepath, rectangular_mesh=False):
         with open(filename_geo_backup, "w") as file:
             for line in lines:
                 if line.startswith("cl_fine"):
-                    line = f"cl_fine = {n_cell};\n"
+                    line = f"cl_fine = {n_cell_label};\n"
                 file.write(line)
 
         # Remove the .con file
         if os.path.exists(filename_con):
             os.remove(filename_con)
 
-        os.system(
-            f"gmsh {filename_geo_backup} -2 -format su2 -save_all -o {filename_su2}"
-        )
-        os.remove(filename_geo_backup)
+        try:
+            _run_gmsh(filename_geo_backup, filename_su2, "su2")
+        finally:
+            if os.path.exists(filename_geo_backup):
+                os.remove(filename_geo_backup)
 
-    return f"lattice_p{n_cell}.su2"
+    return f"lattice_p{n_cell_label}.su2"
 
 
 def update_half_lattice_mesh_file(n_cell, filepath, rectangular_mesh=False):
+    n_cell_label = _normalize_numeric_label(n_cell)
     if rectangular_mesh:
         filename_geo = filepath + "half_lattice_rectangular.geo"
     else:
         filename_geo = filepath + "half_lattice_homogeneous.geo"
     filename_geo_backup = filepath + "half_lattice_backup.geo"
-    filename_su2 = filepath + f"half_lattice_p{n_cell}.su2"
-    filename_vtk = filepath + f"half_lattice_p{n_cell}.vtk"
-    filename_con = filepath + f"half_lattice_p{n_cell}.con"
+    filename_su2 = filepath + f"half_lattice_p{n_cell_label}.su2"
+    filename_vtk = filepath + f"half_lattice_p{n_cell_label}.vtk"
+    filename_con = filepath + f"half_lattice_p{n_cell_label}.con"
 
     if not os.path.exists(filename_su2):
         shutil.copy(filename_geo, filename_geo_backup)
@@ -366,22 +412,23 @@ def update_half_lattice_mesh_file(n_cell, filepath, rectangular_mesh=False):
         with open(filename_geo_backup, "w") as file:
             for line in lines:
                 if line.startswith("cl_fine"):
-                    line = f"cl_fine = {n_cell};\n"
+                    line = f"cl_fine = {n_cell_label};\n"
                 file.write(line)
 
         # Remove the .con file
         if os.path.exists(filename_con):
             os.remove(filename_con)
 
-        os.system(
-            f"gmsh {filename_geo_backup} -2 -format su2 -save_all -o {filename_su2}"
-        )
-        # os.system(
-        #    f"gmsh {filename_geo_backup} -2 -format vtk -save_all -o {filename_vtk}"
-        # )
-        os.remove(filename_geo_backup)
+        try:
+            _run_gmsh(filename_geo_backup, filename_su2, "su2")
+            # os.system(
+            #    f"gmsh {filename_geo_backup} -2 -format vtk -save_all -o {filename_vtk}"
+            # )
+        finally:
+            if os.path.exists(filename_geo_backup):
+                os.remove(filename_geo_backup)
 
-    return f"half_lattice_p{n_cell}.su2"
+    return f"half_lattice_p{n_cell_label}.su2"
 
 
 def write_slurm_file(
