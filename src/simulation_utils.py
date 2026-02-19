@@ -21,7 +21,7 @@ def _get_cuda_visible_device_count():
 
 
 def _get_rocm_visible_device_count():
-    for env_var_name in ("HIP_VISIBLE_DEVICES", "ROCR_VISIBLE_DEVICES", "CUDA_VISIBLE_DEVICES"):
+    for env_var_name in ("HIP_VISIBLE_DEVICES", "ROCR_VISIBLE_DEVICES"):
         visible_count = _get_visible_device_count(env_var_name)
         if visible_count is not None:
             return visible_count
@@ -288,7 +288,7 @@ def run_cpp_simulation_containerized(config_file, use_cuda=False, quiet=False):
 
     # Path to the C++ executable
     if use_cuda:
-        # Keep the existing public flag, but select CUDA or ROCm at runtime.
+        # CUDA requested: use CUDA when available, otherwise try ROCm.
         if _has_cuda_gpu():
             mpi_ranks = _resolve_cuda_mpi_ranks(quiet=quiet)
             singularity_command = [
@@ -302,7 +302,13 @@ def run_cpp_simulation_containerized(config_file, use_cuda=False, quiet=False):
                 "./kitrt_code/build_singularity_cuda/KiT-RT",
                 config_file,
             ]
-        elif _is_rocm_installed() and _has_rocm_gpu():
+        else:
+            if not (_is_rocm_installed() and _has_rocm_gpu()):
+                raise RuntimeError(
+                    "CUDA mode was requested, but no CUDA device was detected and no ROCm "
+                    "device is available. Cannot continue."
+                )
+
             rocm_image = _find_rocm_container_image()
             if rocm_image is None:
                 raise RuntimeError(
@@ -326,25 +332,11 @@ def run_cpp_simulation_containerized(config_file, use_cuda=False, quiet=False):
             singularity_command = [
                 container_runtime,
                 "exec",
-                "--rocm",
                 rocm_image,
                 "mpirun",
                 "-np",
                 mpi_ranks,
                 rocm_executable,
-                config_file,
-            ]
-        else:
-            if not quiet:
-                print(
-                    "CUDA GPUs were not detected and no ROCm GPU fallback is available; "
-                    "running CPU KiT-RT container path."
-                )
-            singularity_command = [
-                container_runtime,
-                "exec",
-                "kitrt_code/tools/singularity/kit_rt.sif",
-                "./kitrt_code/build_singularity/KiT-RT",
                 config_file,
             ]
     else:
