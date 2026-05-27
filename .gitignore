@@ -1,4 +1,5 @@
 *.sh
+!update_kitrt.sh
 ./kitrt_code/
 # Byte-compiled / optimized / DLL files
 __pycache__/

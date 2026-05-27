@@ -13,4 +13,11 @@
 #SBATCH -o ./slurm_logs/singularity_hohlraum%j.txt
 #SBATCH -e ./slurm_logs/singularity_hohlraum_err_%j.txt
 #SBATCH --mail-type=FAIL
-#SBATCH --mail-user=mai@mail.com
+#SBATCH --mail-user=mail@example.com
+
+# Uncomment and tune these lines for CUDA jobs on GPU partitions.
+##SBATCH --gres=gpu:1
+##SBATCH --gpus-per-node=1
+
+### command below
+echo "CharmKiT command placeholder"

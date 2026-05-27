@@ -35,10 +35,6 @@ def model(parameters):
     quiet = bool(parameters[0][13]) if len(parameters[0]) > 13 else False
     if use_cuda:
         singularity_hpc = 1
-    if use_cuda and hpc_operation == 1:
-        raise ValueError(
-            "CUDA mode with SLURM is not supported in this workflow."
-        )
     subfolder = "benchmarks/hohlraum/"
     base_config_file = subfolder + "hohlraum.cfg"
 

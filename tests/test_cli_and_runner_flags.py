@@ -148,22 +148,60 @@ def test_parse_hohlraum_args_supports_current_flags(monkeypatch):
     assert not hasattr(args, "load_from_npz")
 
 
-def test_lattice_main_rejects_cuda_with_slurm(monkeypatch):
+def test_lattice_main_slurm_cuda_runs_stage_1_and_2(monkeypatch):
     monkeypatch.setattr(
         run_lattice, "parse_lattice_args", lambda: lattice_args(use_slurm=True, cuda=True)
     )
-    with pytest.raises(SystemExit, match="--cuda cannot be combined with --slurm"):
-        run_lattice.main()
+    monkeypatch.setattr(run_lattice, "load_toml_hyperparameters", lambda _: {})
+    monkeypatch.setattr(
+        run_lattice,
+        "create_lattice_samples_from_param_range",
+        lambda *_: (np.array([[10.0, 1.0, 0.01, 4]]), np.array(["a", "b", "c", "d"])),
+    )
+    calls = []
+
+    def fake_call_models(*args, **kwargs):
+        calls.append((kwargs["hpc_operation_count"], kwargs["use_cuda"]))
+        return np.array([[1.0] * 8])
+
+    monkeypatch.setattr(run_lattice, "call_models", fake_call_models)
+    monkeypatch.setattr(run_lattice, "delete_slurm_scripts", lambda *_: None)
+    monkeypatch.setattr(run_lattice, "read_username_from_config", lambda *_: "alice")
+    monkeypatch.setattr(run_lattice, "execute_slurm_scripts", lambda *_: None)
+    monkeypatch.setattr(run_lattice, "wait_for_slurm_jobs", lambda **_: None)
+    monkeypatch.setattr(run_lattice.np, "savez", lambda *_, **__: None)
+
+    assert run_lattice.main() == 0
+    assert calls == [(1, True), (2, True)]
 
 
-def test_hohlraum_main_rejects_cuda_with_slurm(monkeypatch):
+def test_hohlraum_main_slurm_cuda_runs_stage_1_and_2(monkeypatch):
     monkeypatch.setattr(
         run_hohlraum,
         "parse_hohlraum_args",
         lambda: hohlraum_args(use_slurm=True, cuda=True),
     )
-    with pytest.raises(SystemExit, match="--cuda cannot be combined with --slurm"):
-        run_hohlraum.main()
+    monkeypatch.setattr(run_hohlraum, "load_toml_hyperparameters", lambda _: {})
+    monkeypatch.setattr(
+        run_hohlraum,
+        "create_hohlraum_samples_from_param_range",
+        lambda *_: (np.zeros((10, 1)), np.array(["p"] * 10)),
+    )
+    calls = []
+
+    def fake_call_models(*args, **kwargs):
+        calls.append((kwargs["hpc_operation_count"], kwargs["use_cuda"]))
+        return np.array([[1.0] * len(run_hohlraum.get_qois_col_names())])
+
+    monkeypatch.setattr(run_hohlraum, "call_models", fake_call_models)
+    monkeypatch.setattr(run_hohlraum, "delete_slurm_scripts", lambda *_: None)
+    monkeypatch.setattr(run_hohlraum, "read_username_from_config", lambda *_: "alice")
+    monkeypatch.setattr(run_hohlraum, "execute_slurm_scripts", lambda *_: None)
+    monkeypatch.setattr(run_hohlraum, "wait_for_slurm_jobs", lambda **_: None)
+    monkeypatch.setattr(run_hohlraum.np, "savez", lambda *_, **__: None)
+
+    assert run_hohlraum.main() == 0
+    assert calls == [(1, True), (2, True)]
 
 
 def test_lattice_main_local_cuda_forces_containerized_mode(monkeypatch):

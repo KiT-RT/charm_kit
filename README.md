@@ -1,42 +1,63 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE) [![GitHub Stars](https://img.shields.io/github/stars/KiT-RT/CharmKiT)](https://github.com/KiT-RT/CharmKiT/stargazers)
-[![Tests](https://github.com/KiT-RT/charm_kit/actions/workflows/tests.yml/badge.svg)](https://github.com/KiT-RT/charm_kit/actions/workflows/tests.yml)
+[![Tests](https://github.com/KiT-RT/CharmKiT/actions/workflows/tests.yml/badge.svg)](https://github.com/KiT-RT/CharmKiT/actions/workflows/tests.yml)
 
-# charm_kit: A wrapper for KiT-RT to conduct simulation sweeps fast
-
-
-charm_kit is a benchmarking suite for the CharmNet project, providing automated parameter studies and test case management for the [KiT-RT PDE simulator](https://kit-rt.readthedocs.io/en/develop/index.html). It enables reproducible runs of radiative transfer test cases such as the lattice and hohlraum setups, using Python scripts to manage parameter sweeps, configuration, and result collection. charm_kit supports both high-performance computing (HPC) and local (no-HPC) execution modes, leveraging Singularity containers for reproducibility.
+# CharmKiT: A wrapper for KiT-RT to conduct simulation sweeps fast
 
 
+CharmKiT is a benchmarking suite for the CharmNet project, providing automated parameter studies and test case management for the [KiT-RT PDE simulator](https://kit-rt.readthedocs.io/en/develop/index.html). It enables reproducible runs of radiative transfer test cases such as the lattice and hohlraum setups, using Python scripts to manage parameter sweeps, configuration, and result collection. CharmKiT supports both high-performance computing (HPC) and local (no-HPC) execution modes, leveraging Apptainer/Singularity containers for reproducibility.
+
+
+
+## Start here
+
+CharmKiT is the Python workflow layer for KiT-RT. Use `kitrt_code` directly when you want to build or modify the C++ solver; use CharmKiT when you want reproducible lattice or hohlraum sweeps, CSV-driven runs, SLURM submission, or QOI collection.
+
+| User goal | Use this | First command |
+|---|---|---|
+| Run one deterministic solver config | `kitrt_code` | `./build_omp/KiT-RT ...` |
+| Run a local lattice sweep | CharmKiT | `poetry run charm-kit run lattice --singularity` |
+| Run a local hohlraum sweep | CharmKiT | `poetry run charm-kit run hohlraum --singularity` |
+| Submit a CPU SLURM sweep | CharmKiT | `poetry run charm-kit submit lattice --singularity` |
+| Submit a CUDA SLURM sweep | CharmKiT | `poetry run charm-kit submit lattice --cuda` |
 
 ## Installation
 
 Preliminaries:
 
-1. Install [Singularity](https://docs.sylabs.io/guides/latest/user-guide/quick_start.html) on your system.
+1. Install [Apptainer](https://apptainer.org/) or [Singularity](https://docs.sylabs.io/guides/latest/user-guide/quick_start.html). Set `KITRT_CONTAINER_RUNTIME=apptainer` or `KITRT_CONTAINER_RUNTIME=singularity` if the runtime is not on `PATH` or you need to force one.
 
-2. Clone the `charm_kit` Github repository:
-   ```
-   git clone git@github.com:ScSteffen/charm_kit.git
+2. Clone the CharmKiT repository:
+
+   ```bash
+   git clone git@github.com:KiT-RT/CharmKiT.git
+   cd CharmKiT
    ```
 
 3. Install Poetry and create the project environment:
-   ```
+
+   ```bash
    python3 -m pip install --user poetry
    poetry install
    ```
 
-4. Install [KiT-RT](https://github.com/KiT-RT/kitrt_code) as a submodule using the provided installer. (Requires root for container build.)
+4. Install [KiT-RT](https://github.com/KiT-RT/kitrt_code) into `./kitrt_code/` using the provided installer:
+
+   ```bash
+   bash install_kitrt.sh
    ```
-   bash install_KiT-RT.sh
+
+   The installer builds or reuses the CPU container and binary. If a CUDA GPU is detected, it also prepares the CUDA container and `build_singularity_cuda` binary. To avoid root builds on an HPC system, provide existing SIF files in `kitrt_code/tools/singularity/`, set `KITRT_CONTAINER_BUILD=skip`, or set `KITRT_CPU_IMAGE_URI` / `KITRT_CUDA_IMAGE_URI` to an Apptainer/Singularity-compatible pull URI.
+
+   ```bash
+   KITRT_CONTAINER_RUNTIME=apptainer KITRT_CONTAINER_BUILD=skip bash install_kitrt.sh
    ```
-   The repository is installed into `./kitrt_code/`.
-   The installer always builds the CPU Singularity image + binary. If a CUDA GPU is detected (`nvidia-smi`), it also builds the CUDA Singularity image and `build_singularity_cuda` binary automatically.
-   If updating KiT-RT:
+
+5. Update an existing KiT-RT checkout and rebuild inside existing containers:
+
+   ```bash
+   bash update_kitrt.sh
    ```
-   bash update_KiT-RT.sh
-   ```
-   If on a cluster without root, build the container locally and upload it to `charm_kit/kitrt_code/tools/singularity/`.
 
 ## Testing
 
@@ -48,9 +69,9 @@ poetry run pytest -q
 ```
 
 
-## How charm_kit Works
+## How CharmKiT Works
 
-charm_kit automates the setup, execution, and result collection for radiative transfer test cases using the KiT-RT solver. The workflow is managed by Python scripts (e.g., `run_hohlraum.py`, `run_lattice.py`) that:
+CharmKiT automates the setup, execution, and result collection for radiative transfer test cases using the KiT-RT solver. The workflow is managed by Python scripts (e.g., `run_hohlraum.py`, `run_lattice.py`) that:
 
 - Define parameter sweeps for each test case (e.g., mesh size, quadrature order, absorption/scattering coefficients).
 - Generate the necessary configuration files for KiT-RT.
@@ -60,26 +81,23 @@ charm_kit automates the setup, execution, and result collection for radiative tr
 Scripts support both HPC (SLURM) and local (no-HPC) execution. 
 
 
-## Running charm_kit Scripts
+## Running CharmKiT
 
-charm_kit provides test-case drivers:
-
-- `run_lattice.py`
-- `run_hohlraum.py`
-
-Use Poetry to run commands in the project environment.
-
-Each script has its own CLI parser. They share execution flags, but design-parameter flags are test-case specific. Print all flags with:
+CharmKiT provides a `charm-kit` CLI plus backward-compatible root scripts. Use Poetry to run commands in the project environment.
 
 ```bash
+poetry run charm-kit run lattice --help
+poetry run charm-kit run hohlraum --help
 poetry run python run_lattice.py --help
 poetry run python run_hohlraum.py --help
 ```
 
+`charm-kit run <case>` runs locally by default. `charm-kit submit <case>` adds `--slurm` and generates/submits SLURM scripts. The lattice and hohlraum runners share execution flags, but design-parameter flags are test-case specific.
+
 Execution and I/O flags:
 
 - `--slurm`: Submit jobs through SLURM.
-- `--singularity`: Run KiT-RT through the CPU Singularity image.
+- `--singularity`: Run KiT-RT through the CPU container image.
 - `--cuda`: Run KiT-RT through the CUDA Singularity image (`--nv` is added automatically).
 - `--csv CSV`: Read design parameters from CSV and write QOIs back to that CSV.
 - `--config CONFIG`: Path to a TOML hyperparameter file.
@@ -136,7 +154,7 @@ Precedence for hyperparameters is:
    ```
 
    Uses image/executable:
-   `kitrt_code/tools/singularity/kit_rt.sif` and `./kitrt_code/build_singularity/KiT-RT`.
+   `kitrt_code/tools/singularity/kit_rt.sif` and `./kitrt_code/build_singularity/KiT-RT`. Set `KITRT_CONTAINER_RUNTIME=apptainer` to run with Apptainer instead of Singularity.
 
 3. **Local mode + Singularity + GPU**
 
@@ -149,7 +167,7 @@ Precedence for hyperparameters is:
    Uses image/executable:
    `kitrt_code/tools/singularity/kit_rt_MPI_cuda.sif` and `./kitrt_code/build_singularity_cuda/KiT-RT`.
    CUDA runs are dispatched as:
-   `singularity exec --nv ... mpirun -np <gpu_count> ./kitrt_code/build_singularity_cuda/KiT-RT ...`.
+   `$KITRT_CONTAINER_RUNTIME exec --nv ... mpirun -np <gpu_count> ./kitrt_code/build_singularity_cuda/KiT-RT ...`.
    `<gpu_count>` is auto-detected from `CUDA_VISIBLE_DEVICES` or `nvidia-smi`.
    Override rank count with `KITRT_CUDA_MPI_RANKS=<N>`.
 
@@ -163,7 +181,7 @@ Precedence for hyperparameters is:
 
    Generated SLURM scripts call: `srun ./kitrt_code/build/KiT-RT ...`.
 
-5. **SLURM mode + Singularity (CPU)**
+5. **SLURM mode + Singularity/Apptainer (CPU)**
 
    ```bash
    poetry run python run_lattice.py --slurm --singularity
@@ -172,12 +190,17 @@ Precedence for hyperparameters is:
    ```
 
    Generated SLURM scripts call:
-   `singularity exec kitrt_code/tools/singularity/kit_rt.sif ./kitrt_code/build_singularity/KiT-RT ...`.
+   `srun "$KITRT_CONTAINER_RUNTIME" exec kitrt_code/tools/singularity/kit_rt.sif ./kitrt_code/build_singularity/KiT-RT ...`.
 
-### Not supported
+6. **SLURM mode + Singularity/Apptainer + GPU**
 
-- `--slurm --cuda` is intentionally blocked.
-  GPU mode is currently supported only for local Singularity runs (no SLURM).
+   ```bash
+   poetry run charm-kit submit lattice --cuda
+   # or
+   poetry run charm-kit submit hohlraum --cuda
+   ```
+
+   Generated SLURM scripts use `--nv`, the CUDA SIF at `kitrt_code/tools/singularity/kit_rt_MPI_cuda.sif`, and `mpirun -np "$KITRT_CUDA_MPI_RANKS"`. If `KITRT_CUDA_MPI_RANKS` is unset, the script falls back to `SLURM_GPUS_ON_NODE` and then `1`. Update `slurm_template.sh` with the account, partition, and GPU directives required by your site.
 
 
 # Test Case Descriptions

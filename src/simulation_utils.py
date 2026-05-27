@@ -65,6 +65,10 @@ def _resolve_cuda_mpi_ranks(quiet=False):
     return "1"
 
 
+def _container_runtime():
+    return os.environ.get("KITRT_CONTAINER_RUNTIME", "singularity")
+
+
 def _run_and_raise(command, mode_label, quiet=False):
     try:
         if quiet:
@@ -127,7 +131,7 @@ def run_cpp_simulation_containerized(config_file, use_cuda=False, quiet=False):
     if use_cuda:
         mpi_ranks = _resolve_cuda_mpi_ranks(quiet=quiet)
         singularity_command = [
-            "singularity",
+            _container_runtime(),
             "exec",
             "--nv",
             "kitrt_code/tools/singularity/kit_rt_MPI_cuda.sif",
@@ -139,7 +143,7 @@ def run_cpp_simulation_containerized(config_file, use_cuda=False, quiet=False):
         ]
     else:
         singularity_command = [
-            "singularity",
+            _container_runtime(),
             "exec",
             "kitrt_code/tools/singularity/kit_rt.sif",
             "./kitrt_code/build_singularity/KiT-RT",
