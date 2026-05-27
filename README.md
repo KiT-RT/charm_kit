@@ -1,6 +1,6 @@
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE) [![GitHub Stars](https://img.shields.io/github/stars/KiT-RT/CharmKiT)](https://github.com/KiT-RT/CharmKiT/stargazers)
-[![Tests](https://github.com/KiT-RT/CharmKiT/actions/workflows/tests.yml/badge.svg)](https://github.com/KiT-RT/CharmKiT/actions/workflows/tests.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE) [![GitHub Stars](https://img.shields.io/github/stars/KiT-RT/charm_kit)](https://github.com/KiT-RT/charm_kit/stargazers)
+[![Tests](https://github.com/KiT-RT/charm_kit/actions/workflows/tests.yml/badge.svg)](https://github.com/KiT-RT/charm_kit/actions/workflows/tests.yml)
 
 # CharmKiT: A wrapper for KiT-RT to conduct simulation sweeps fast
 
@@ -30,8 +30,8 @@ Preliminaries:
 2. Clone the CharmKiT repository:
 
    ```bash
-   git clone git@github.com:KiT-RT/CharmKiT.git
-   cd CharmKiT
+   git clone git@github.com:KiT-RT/charm_kit.git
+   cd charm_kit
    ```
 
 3. Install Poetry and create the project environment:
