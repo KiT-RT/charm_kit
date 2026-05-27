@@ -34,10 +34,6 @@ def model(parameters):
     quiet = bool(parameters[0][8]) if len(parameters[0]) > 8 else False
     if use_cuda:
         singularity_hpc = 1
-    if use_cuda and hpc_operation == 1:
-        raise ValueError(
-            "CUDA mode with SLURM is not supported in this workflow."
-        )
 
     subfolder = "benchmarks/lattice/"
     base_config_file = subfolder + "lattice.cfg"

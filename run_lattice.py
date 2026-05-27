@@ -24,14 +24,9 @@ def main():
 
     hpc_operation = args.use_slurm  # Flag when using HPC cluster
     use_cuda = args.cuda
-    if use_cuda and hpc_operation:
-        raise SystemExit(
-            "ERROR: --cuda cannot be combined with --slurm. "
-            "GPU mode is supported only with Singularity in non-SLURM runs."
-        )
     singularity_hpc = args.use_singularity or use_cuda
     if use_cuda and not args.use_singularity:
-        print("CUDA mode requested; enabling Singularity execution.")
+        print("CUDA mode requested; enabling containerized execution.")
 
     # print(f"Use rectangular_mesh = {args.rectangular_mesh}")
     rectangular_mesh = False

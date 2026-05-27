@@ -384,13 +384,59 @@ def update_half_lattice_mesh_file(n_cell, filepath, rectangular_mesh=False):
     return f"half_lattice_p{n_cell}.su2"
 
 
+def _slurm_command_lines(unique_name, subfolder, singularity=True, use_cuda=False):
+    config_path = subfolder + unique_name + ".cfg"
+    if use_cuda:
+        return [
+            'CONTAINER_RUNTIME="${KITRT_CONTAINER_RUNTIME:-singularity}"\n',
+            'CUDA_MPI_RANKS="${KITRT_CUDA_MPI_RANKS:-${SLURM_GPUS_ON_NODE:-1}}"\n',
+            'srun "${CONTAINER_RUNTIME}" exec --nv '
+            "kitrt_code/tools/singularity/kit_rt_MPI_cuda.sif "
+            'mpirun -np "${CUDA_MPI_RANKS}" '
+            "./kitrt_code/build_singularity_cuda/KiT-RT "
+            + config_path
+            + "\n",
+        ]
+    if singularity:
+        return [
+            'CONTAINER_RUNTIME="${KITRT_CONTAINER_RUNTIME:-singularity}"\n',
+            'srun "${CONTAINER_RUNTIME}" exec '
+            "kitrt_code/tools/singularity/kit_rt.sif "
+            "./kitrt_code/build_singularity/KiT-RT "
+            + config_path
+            + "\n",
+        ]
+    return ["srun ./kitrt_code/build/KiT-RT " + config_path + "\n"]
+
+
+def _insert_slurm_command(lines, command_lines):
+    marker = "### command below"
+    updated = []
+    inserted = False
+    skip_existing_command = False
+
+    for line in lines:
+        if skip_existing_command:
+            skip_existing_command = False
+            continue
+        updated.append(line)
+        if line.strip() == marker:
+            updated.extend(command_lines)
+            inserted = True
+            skip_existing_command = True
+
+    if not inserted:
+        if updated and updated[-1].strip():
+            updated.append("\n")
+        updated.append(marker + "\n")
+        updated.extend(command_lines)
+
+    return updated
+
+
 def write_slurm_file(
     output_slurm_dir, unique_name, subfolder, singularity=True, use_cuda=False
 ):
-    if use_cuda:
-        raise ValueError(
-            "CUDA mode with SLURM is not supported in this workflow."
-        )
     basic_slurm_file = "./slurm_template.sh"
 
     # Ensure the output directory exists
@@ -401,21 +447,16 @@ def write_slurm_file(
     with open(basic_slurm_file, "r") as file:
         lines = file.readlines()
 
-    # Replace the last line
-    if lines:
-        if singularity:
-            lines[-1] = (
-                "singularity exec kitrt_code/tools/singularity/kit_rt.sif ./kitrt_code/build_singularity/KiT-RT "
-                + subfolder
-                + unique_name
-                + ".cfg\n"
-            )
-
-        else:
-            lines[-1] = "srun ./kitrt_code/build/KiT-RT " + subfolder + unique_name + ".cfg\n"
+    command_lines = _slurm_command_lines(
+        unique_name,
+        subfolder,
+        singularity=singularity,
+        use_cuda=use_cuda,
+    )
+    lines = _insert_slurm_command(lines, command_lines)
 
     # Write the modified lines to the output file
-    with open(output_slurm_dir + unique_name + ".sh", "w") as file:
+    with open(os.path.join(output_slurm_dir, unique_name + ".sh"), "w") as file:
         file.writelines(lines)
 
     return 0

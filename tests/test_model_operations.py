@@ -160,10 +160,12 @@ def test_lattice_model_postprocess_operation_reads_qois(lattice_mocks):
     assert lattice_mocks["container"] == []
 
 
-def test_lattice_model_rejects_cuda_with_slurm():
+def test_lattice_model_slurm_cuda_writes_script(lattice_mocks):
     params = [[10.0, 1.0, 0.01, 4, 1, 1, False, True, False]]
-    with pytest.raises(ValueError, match="CUDA mode with SLURM is not supported"):
-        lattice_model.model(params)
+    qois = lattice_model.model(params)[0]
+    assert qois == [0] * 8
+    assert len(lattice_mocks["slurm"]) == 1
+    assert lattice_mocks["slurm"][0][1]["use_cuda"] is True
 
 
 def test_hohlraum_model_local_raw_operation(hohlraum_mocks):
@@ -202,7 +204,9 @@ def test_hohlraum_model_postprocess_operation_reads_qois(hohlraum_mocks):
     assert hohlraum_mocks["container"] == []
 
 
-def test_hohlraum_model_rejects_cuda_with_slurm():
+def test_hohlraum_model_slurm_cuda_writes_script(hohlraum_mocks):
     params = [[0.4, -0.4, 0.4, -0.4, -0.6, 0.6, 0.0, 0.0, 0.01, 6, 1, 1, True, False]]
-    with pytest.raises(ValueError, match="CUDA mode with SLURM is not supported"):
-        hohlraum_model.model(params)
+    qois = hohlraum_model.model(params)[0]
+    assert qois == [0] * 125
+    assert len(hohlraum_mocks["slurm"]) == 1
+    assert hohlraum_mocks["slurm"][0][1]["use_cuda"] is True

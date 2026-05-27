@@ -4,7 +4,7 @@ version = "0.1.0"
 description = "Benchmarking workflows for KiT-RT lattice and hohlraum test cases."
 authors = ["charm_kit Developers"]
 readme = "README.md"
-package-mode = false
+packages = [{ include = "src" }]
 
 [tool.poetry.dependencies]
 python = ">=3.10,<3.13"
@@ -14,6 +14,9 @@ pandas = "*"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "*"
+
+[tool.poetry.scripts]
+charm-kit = "src.cli:main"
 
 [tool.pytest.ini_options]
 pythonpath = ["."]
